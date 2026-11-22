@@ -34,8 +34,12 @@ public static class VerifyTablefront
             check(g.InMenu && g.Sim.Elapsed == 0, "Title is idle, with no autoplay");
             check(NeuralCommander.Available && NeuralCommander.TrainingEpisodes > 0, "Trained neural policy loaded from Resources");
             check(UnityEngine.Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None).Length == 1, "One EventSystem");
-            check(g.HUD.GetComponentInChildren<Canvas>().renderMode == RenderMode.ScreenSpaceCamera, "Capture-compatible camera canvas");
+            check(g.HUD.GetComponentInChildren<Canvas>().renderMode == RenderMode.ScreenSpaceOverlay, "Native overlay HUD bypasses world post-processing");
             check(g.ViewCamera.GetUniversalAdditionalCameraData().renderPostProcessing, "URP post-processing enabled");
+            var pipeline=GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            check(pipeline && Mathf.Abs(pipeline.renderScale-1.5f)<.001f && pipeline.msaaSampleCount==8,"Ultra uses 1.5x supersampling and 8x MSAA");
+            check(g.ViewCamera.GetUniversalAdditionalCameraData().antialiasing==AntialiasingMode.None && !g.ViewCamera.allowDynamicResolution,"No softening post AA or dynamic resolution");
+            check(pipeline.mainLightShadowmapResolution==8192 && pipeline.shadowCascadeCount==4,"8K four-cascade shadow atlas");
             var volume = UnityEngine.Object.FindAnyObjectByType<Volume>();
             check(volume != null && volume.profile.components.Count >= 4, "Four authored Volume overrides");
             check(!UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None).Any(r => r.sharedMaterial == null || r.sharedMaterial.name == "Default-Material"), "No default or missing renderer materials");

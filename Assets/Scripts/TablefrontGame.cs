@@ -59,7 +59,10 @@ namespace Tablefront
         void Awake()
         {
             Application.targetFrameRate = 144;
-            QualitySettings.vSyncCount = 1;
+            TablefrontGraphics.Configure();
+#if !UNITY_EDITOR
+            if (!Application.isBatchMode) TablefrontGraphics.NativeFullscreen();
+#endif
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             masterVolume = PlayerPrefs.GetFloat("Tablefront.Volume", .65f);
@@ -171,7 +174,7 @@ namespace Tablefront
             var kb = Keyboard.current; var mouse = Mouse.current;
             if (kb != null)
             {
-                if (kb.f11Key.wasPressedThisFrame) Screen.fullScreenMode = Screen.fullScreenMode == FullScreenMode.Windowed ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
+                if (kb.f11Key.wasPressedThisFrame) TablefrontGraphics.ToggleFullscreen();
                 if (kb.escapeKey.wasPressedThisFrame) { if (HelpOpen) ToggleHelp(); else TogglePause(); }
                 if (InMenu) return; // EventSystem Submit follows the focused menu button.
                 if (kb.spaceKey.wasPressedThisFrame && !HelpOpen) TogglePause();

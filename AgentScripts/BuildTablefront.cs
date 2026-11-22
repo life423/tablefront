@@ -34,14 +34,16 @@ public static class BuildTablefront
         QualitySettings.SetQualityLevel(QualitySettings.names.Length - 1, true);
         var pipeline = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
         if (!pipeline) throw new Exception("URP is required");
-        pipeline.supportsHDR = true; pipeline.msaaSampleCount = 4; pipeline.shadowDistance = 110;
-        pipeline.mainLightShadowmapResolution = 4096;
+        TablefrontGraphics.Configure();
         EditorUtility.SetDirty(pipeline);
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         new GameObject("Tablefront match director").AddComponent<TablefrontGame>();
         PlayerSettings.companyName = "Lumen Workshop"; PlayerSettings.productName = "Tablefront";
-        PlayerSettings.defaultScreenWidth = 1600; PlayerSettings.defaultScreenHeight = 900;
-        PlayerSettings.fullScreenMode = FullScreenMode.Windowed; PlayerSettings.resizableWindow = true;
+        PlayerSettings.bundleVersion = "0.2.0";
+        PlayerSettings.defaultScreenWidth = 2560; PlayerSettings.defaultScreenHeight = 1440;
+        PlayerSettings.defaultIsNativeResolution = true;
+        PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow; PlayerSettings.resizableWindow = true;
+        PlayerSettings.forceSingleInstance = true;
         PlayerSettings.runInBackground = false; PlayerSettings.colorSpace = ColorSpace.Linear;
         PlayerSettings.SetScriptingBackend(UnityEditor.Build.NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
         var icon = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Branding/Tablefront.png");
@@ -49,6 +51,6 @@ public static class BuildTablefront
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Tablefront.unity");
         EditorBuildSettings.scenes = new[] {new EditorBuildSettingsScene("Assets/Scenes/Tablefront.unity", true)};
         AssetDatabase.SaveAssets();
-        return "Tablefront scene saved; HDR URP, 4xMSAA, runtime tabletop, TMP resources and icon ready";
+        return "Tablefront scene saved; native display, 1.5x supersampling, 8xMSAA, 8K shadow atlas, native overlay HUD, single instance";
     }
 }

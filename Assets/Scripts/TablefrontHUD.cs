@@ -45,7 +45,8 @@ namespace Tablefront
             var root = new GameObject("Tablefront Interface", typeof(RectTransform), typeof(Canvas), typeof(UnityEngine.UI.CanvasScaler), typeof(UnityEngine.UI.GraphicRaycaster));
             root.transform.SetParent(transform, false);
             canvas = root.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.pixelPerfect = true;
             canvas.worldCamera = camera;
             canvas.planeDistance = 1f;
             canvas.sortingOrder = 100;
@@ -334,8 +335,9 @@ namespace Tablefront
             if (!built) return;
             selection.gameObject.SetActive(visible);
             if (!visible) return;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, start, view, out Vector2 first);
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, end, view, out Vector2 last);
+            Camera eventCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : view;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, start, eventCamera, out Vector2 first);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, end, eventCamera, out Vector2 last);
             selection.anchorMin = selection.anchorMax = new Vector2(.5f, .5f);
             selection.anchoredPosition = Vector2.Min(first, last);
             selection.sizeDelta = new Vector2(Mathf.Abs(first.x - last.x), Mathf.Abs(first.y - last.y));

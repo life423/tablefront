@@ -18,3 +18,4 @@ TestResults/packaged-trainer-smoke/
 !Training/*.csproj
 !SimulationTests/*.csproj
 TestResults/standalone-process.json
+TestResults/ultra-process.json

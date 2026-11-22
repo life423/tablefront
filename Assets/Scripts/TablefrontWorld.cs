@@ -95,12 +95,12 @@ namespace Tablefront
                 faction[i] = Mat("Faction enamel " + i, TablePalette.Team(i), .38f, .05f);
                 factionBright[i] = Mat("Faction signal " + i, TablePalette.Team(i), 0, 0, true);
             }
-            var flock = Texture("Flocked linen", 128, false);
+            var flock = Texture("Flocked linen", 512, false);
             terrain.SetTexture("_BaseMap", flock);
             terrain.SetTextureScale("_BaseMap", new Vector2(14, 14));
             sand.SetTexture("_BaseMap", flock);
             sand.SetTextureScale("_BaseMap", new Vector2(4, 4));
-            walnut.SetTexture("_BaseMap", Texture("Fine walnut grain", 128, true));
+            walnut.SetTexture("_BaseMap", Texture("Fine walnut grain", 1024, true));
             walnut.SetTextureScale("_BaseMap", new Vector2(4, 1));
         }
 
@@ -117,11 +117,13 @@ namespace Tablefront
 
         Texture2D Texture(string name, int size, bool grain)
         {
-            var t = new Texture2D(size, size, TextureFormat.RGBA32, true) { name = name, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Repeat };
+            var t = new Texture2D(size, size, TextureFormat.RGBA32, true) { name = name, filterMode = FilterMode.Trilinear, anisoLevel = 16, wrapMode = TextureWrapMode.Repeat };
             var data = new Color[size * size];
             for (var z = 0; z < size; z++) for (var x = 0; x < size; x++)
             {
-                float n = Mathf.PerlinNoise(x * (grain ? .035f : .39f), z * (grain ? .48f : .39f));
+                // Preserve the authored scale while adding real texture samples, rather than more noise.
+                float sampleScale = 128f / size;
+                float n = Mathf.PerlinNoise(x * sampleScale * (grain ? .035f : .39f), z * sampleScale * (grain ? .48f : .39f));
                 float v = .88f + n * .17f;
                 data[z * size + x] = new Color(v, v, v, 1);
             }
@@ -244,12 +246,13 @@ namespace Tablefront
             if (view != null)
             {
                 view.clearFlags = CameraClearFlags.SolidColor; view.backgroundColor = TablePalette.Background;
-                view.allowHDR = true;
+                view.allowHDR = true; view.allowMSAA = true; view.allowDynamicResolution = false;
                 var data = view.GetUniversalAdditionalCameraData(); data.renderPostProcessing = true;
-                data.volumeLayerMask = 1; data.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
+                data.volumeLayerMask = 1; data.antialiasing = AntialiasingMode.None;
+                data.stopNaN = true;
             }
             var urp = UniversalRenderPipeline.asset;
-            if (urp != null) { urp.supportsHDR = true; urp.shadowDistance = 120; urp.msaaSampleCount = 4; }
+            if (urp != null) TablefrontGraphics.Configure();
             var volume = new GameObject("Tabletop grading").AddComponent<Volume>(); volume.transform.SetParent(transform, false); volume.isGlobal = true;
             var profile = ScriptableObject.CreateInstance<VolumeProfile>(); profile.name = "Tablefront warm studio profile"; volume.sharedProfile = profile;
             profile.Add<Tonemapping>(true).mode.value = TonemappingMode.ACES;

@@ -1,8 +1,11 @@
 PASS Title is idle, with no autoplay
 PASS Trained neural policy loaded from Resources
 PASS One EventSystem
-PASS Capture-compatible camera canvas
+PASS Native overlay HUD bypasses world post-processing
 PASS URP post-processing enabled
+PASS Ultra uses 1.5x supersampling and 8x MSAA
+PASS No softening post AA or dynamic resolution
+PASS 8K four-cascade shadow atlas
 PASS Four authored Volume overrides
 PASS No default or missing renderer materials
 PASS Play menu listener starts selected army

@@ -1,5 +1,17 @@
 # Tablefront validation — November 22,2026
 
+## Current release: v0.2.0 graphics update
+
+Hardware query confirmed an NVIDIA GeForce RTX 5070, 12,227 MiB reported VRAM, driver 621.01 and a 2560×1440 display at approximately 144 Hz. The original player used that discrete GPU through Direct3D 12. The VRAM figure comes from nvidia-smi; the Windows video-controller AdapterRAM field is limited to a 32-bit number.
+
+The original preset applied FXAA to the battlefield and its camera-rendered HUD. It started at 1600×900, and F11 changed window mode without explicitly selecting native display resolution. This release removes FXAA, puts the HUD in a pixel-perfect native overlay, selects native borderless fullscreen at startup, and explicitly chooses native resolution on F11. The world uses 1.5× render scale, 8× MSAA, no dynamic resolution, a four-cascade 8192-pixel main-light shadow atlas, full texture mip quality, 512/1024-pixel procedural textures, trilinear filtering and 16× anisotropy. The desktop renderer is Forward+, which supports MSAA. Gameplay and neural weights were unchanged.
+
+Updated Editor verification passed 31 checks, including selection, virtual right-click orders, recruitment, pause, camera movement, neural inference, win/reset and actual graphics settings. Genuine native GameView renders at 2560×1440 and 1024×768 were inspected for text, world edges and layout. A representative screenshot is in Docs/Images. Initial overlay captures were discarded because Pipeline enlarged a 640×480 preview to the requested PNG size. The QA helper then selected fixed-resolution GameViews and verified both target and rendered texture dimensions. An initial request before the GameView existed failed and was corrected. Original GameView selection, test input routing, auto-tick and background-running overrides were restored.
+
+The v0.2.0 Windows build completed successfully, exit 0, at `../Builds/TablefrontUltra/Tablefront.exe`. It was built separately while the user's original game stayed open. Desktop and parent-folder shortcuts target this upgraded build. Single-instance mode prevents duplicate launches. The user confirmed the original game opened after a direct launch; a physical double-click of the upgraded shortcut was not tested. Computer control stopped when the user pressed Escape, and the existing player session was left alone.
+
+These are verified settings and rendered review, not a measured frame-rate guarantee. Native physical fullscreen switching, extended GPU profiling, audio listening and broader human balance testing remain follow-up work. The following sections preserve the initial demo's evidence; this section supersedes its graphics and build defaults.
+
 ## Delivered scope
 
 An offline Windows tabletop RTS in a new sibling project alongside Breachline and Lumen Run. The user explicitly required neural networks and reinforcement learning; the first planned scripted commander was replaced before delivery. Runtime high-level strategy uses the trained neural policy, not the discarded scripted planner.
@@ -73,3 +85,5 @@ All agent-owned Editor/startup-test processes were closed. Play Mode, background
 Applied new-unity-project, craft-game-floors, unity-cli, unity-package-management, unity-pipeline, ui/ui-ugui and URP postprocessing guidance. Read creation/visual baseline, CLI build/integration/play verification, and craft art, lighting, camera, motion, loop, feel, audio, VFX, shell and scorecard references. URP and Input System APIs were checked against installed package sources. Checked Unity 6000.6 WorldToScreenPoint and Cinemachine 3.1 HardLock documentation. PPO source:[Schulman etal., 2017](https://arxiv.org/abs/1707.06347). The title/diorama uses authored procedural art; no downloaded art or proprietary assets were introduced. Audio uses generated clips with a saved master gain rather than a physical mixer asset. Cloud/live-service floors do not apply to this offline demo.
 
 
+
+The upgraded standalone also completed an invisible `-batchmode -nographics` startup, reached scene initialization (`UnloadTime`), and logged no exceptions. Its own test process was then closed; the user's original visible player was not closed. The release ZIP is 41,308,871 bytes and excludes Unity build backups, provenance metadata and debug symbols. SHA256: `A19B6ED5BEE6637164EFA3456281E8C9A9F59B89DFE97039E34B589ED6B72B47`.
