@@ -1,0 +1,28 @@
+PASS Title is idle, with no autoplay
+PASS Trained neural policy loaded from Resources
+PASS One EventSystem
+PASS Capture-compatible camera canvas
+PASS URP post-processing enabled
+PASS Four authored Volume overrides
+PASS No default or missing renderer materials
+PASS Play menu listener starts selected army
+PASS Live match advances frames and simulation time
+PASS Pause freezes simulation
+PASS Help freezes simulation
+PASS Recruit button spends credits and deploys scout
+PASS Recruit cooldown prevents duplicate spawn
+PASS Select all includes reinforcements
+PASS Screen-space click selection
+PASS Box selection selects friendly army
+PASS Virtual right-click issues world formation order (UI=False,current=True,held=True,enabled=True,screen=(320.00, 275.12),notice=Advance to position)
+PASS Formation order moves troops toward objective
+PASS Ground picking is bounded to board
+PASS Neural commander handoff toggles
+PASS 2x simulator speed
+PASS Virtual W pans camera
+PASS Paused camera ignores gameplay input
+PASS Victory reaches result state
+PASS Spectator restart resets all match state
+PASS Learned commanders capture territory
+PASS Learned commanders accrue objective score
+PASS Neural match state stays finite

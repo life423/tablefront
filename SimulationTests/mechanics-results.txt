@@ -56,5 +56,5 @@ PASS soak maintains finite bounded troop positions
 PASS soak maintains army caps and nonnegative credits
 PASS soak observations remain finite
 PASS new match cleanly resets spent, contested, and damaged run state
-Throughput: 4800 fixed .05s steps in 0.067s = 71933 steps/s; combat events 454; final unit count 23
+Throughput: 4800 fixed .05s steps in 0.067s = 71244 steps/s; combat events 454; final unit count 23
 PASS: 57 checks

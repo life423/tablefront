@@ -1,5 +1,5 @@
 {
-  "policyPath": "C:\\Users\\aiand\\OneDrive\\Documentos\\ChatGPT\\unity\\TablefrontSource\\Training\\unity-trained\\commander-policy.json",
+  "policyPath": "C:\\Users\\aiand\\Documents\\programming\\lumen-run\\Tablefront\\Training\\unity-trained\\commander-policy.json",
   "trainingEpisodes": 2048,
   "checks": 24,
   "maxProbabilityError": 2.682209E-07,

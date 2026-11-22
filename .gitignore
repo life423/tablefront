@@ -9,3 +9,11 @@
 *.sln
 Captures/
 Assets/Captures/
+Training/bin/
+Training/obj/
+SimulationTests/bin/
+SimulationTests/obj/
+SimulationTests/.dotnet/
+TestResults/packaged-trainer-smoke/
+!Training/*.csproj
+!SimulationTests/*.csproj
