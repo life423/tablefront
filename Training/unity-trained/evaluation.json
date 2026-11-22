@@ -1,0 +1,80 @@
+{
+  "algorithm": "PPO clipped surrogate \u002B shared neural value baseline, GAE(lambda=.95), Adam, self-play",
+  "seed": 20261122,
+  "trainedEpisodes": 2048,
+  "thisRunEpisodes": 2048,
+  "totalDecisions": 726762,
+  "observationCount": 40,
+  "hiddenCount": 32,
+  "actionCount": 10,
+  "gamma": 0.995,
+  "clip": 0.2,
+  "entropyCoefficient": 0.015,
+  "valueCoefficient": 0.5,
+  "batchEpisodes": 16,
+  "maxDecisions": 180,
+  "timestep": 0.05,
+  "decisionInterval": 1.65,
+  "trainingSeconds": 24.9596448,
+  "trainedVersusRandom": {
+    "games": 120,
+    "wins": 95,
+    "normallyFinished": 120,
+    "winRate": 0.7916667,
+    "meanScore": 319.50693,
+    "meanOpponentScore": 95.30649,
+    "actionCounts": [
+      1215,
+      1597,
+      1414,
+      467,
+      963,
+      68,
+      1876,
+      2292,
+      2791,
+      1461
+    ]
+  },
+  "trainedVersusUntrainedNetwork": {
+    "games": 120,
+    "wins": 99,
+    "normallyFinished": 120,
+    "winRate": 0.825,
+    "meanScore": 322.4631,
+    "meanOpponentScore": 81.9298,
+    "actionCounts": [
+      1177,
+      1545,
+      1416,
+      552,
+      1174,
+      81,
+      1634,
+      2081,
+      2628,
+      1320
+    ]
+  },
+  "untrainedVersusRandom": {
+    "games": 120,
+    "wins": 36,
+    "normallyFinished": 117,
+    "winRate": 0.3,
+    "meanScore": 163.02832,
+    "meanOpponentScore": 171.70999,
+    "actionCounts": [
+      1748,
+      1645,
+      1838,
+      1710,
+      1649,
+      1800,
+      1709,
+      1673,
+      1683,
+      1674
+    ]
+  },
+  "note": "Evaluation uses unseen simulation seeds and rotated seats, not training outcomes. A finite horizon ranks scores if no normal win occurred. These small samples do not establish strong RTS play."
+}

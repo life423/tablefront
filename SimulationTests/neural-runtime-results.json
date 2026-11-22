@@ -1,0 +1,273 @@
+{
+  "policyPath": "C:\\Users\\aiand\\OneDrive\\Documentos\\ChatGPT\\unity\\TablefrontSource\\Training\\unity-trained\\commander-policy.json",
+  "trainingEpisodes": 2048,
+  "checks": 24,
+  "maxProbabilityError": 2.682209E-07,
+  "sampledActionMismatches": 0,
+  "rollouts": [
+    {
+      "seed": 8101,
+      "finished": true,
+      "winner": 2,
+      "seconds": 230.45946,
+      "score": [
+        261.60852,
+        133.02992,
+        350.0824
+      ],
+      "units": [
+        2,
+        9,
+        11
+      ],
+      "combatEvents": 744,
+      "maxArmyCentroidDistanceFromHQ": [
+        24.033445,
+        22.93441,
+        18.667545
+      ]
+    },
+    {
+      "seed": 8102,
+      "finished": true,
+      "winner": 1,
+      "seconds": 159.0051,
+      "score": [
+        54.445248,
+        350.03174,
+        118.95558
+      ],
+      "units": [
+        0,
+        12,
+        1
+      ],
+      "combatEvents": 554,
+      "maxArmyCentroidDistanceFromHQ": [
+        17.999882,
+        31.681795,
+        19.32184
+      ]
+    },
+    {
+      "seed": 8103,
+      "finished": true,
+      "winner": 2,
+      "seconds": 188.30688,
+      "score": [
+        238.45158,
+        0,
+        350.03174
+      ],
+      "units": [
+        2,
+        7,
+        10
+      ],
+      "combatEvents": 537,
+      "maxArmyCentroidDistanceFromHQ": [
+        19.307499,
+        18.830406,
+        27.336096
+      ]
+    },
+    {
+      "seed": 8104,
+      "finished": true,
+      "winner": 2,
+      "seconds": 200.35762,
+      "score": [
+        228.71718,
+        55.210224,
+        350.03174
+      ],
+      "units": [
+        3,
+        1,
+        10
+      ],
+      "combatEvents": 707,
+      "maxArmyCentroidDistanceFromHQ": [
+        22.619188,
+        18.766956,
+        25.864763
+      ]
+    },
+    {
+      "seed": 8105,
+      "finished": true,
+      "winner": 1,
+      "seconds": 191.60709,
+      "score": [
+        83.81038,
+        350.0267,
+        129.84035
+      ],
+      "units": [
+        0,
+        12,
+        6
+      ],
+      "combatEvents": 654,
+      "maxArmyCentroidDistanceFromHQ": [
+        18.004229,
+        29.122953,
+        23.376596
+      ]
+    },
+    {
+      "seed": 8106,
+      "finished": true,
+      "winner": 1,
+      "seconds": 190.40701,
+      "score": [
+        181.80843,
+        350.0817,
+        34.75514
+      ],
+      "units": [
+        0,
+        10,
+        1
+      ],
+      "combatEvents": 676,
+      "maxArmyCentroidDistanceFromHQ": [
+        30.589018,
+        32.055084,
+        17.973673
+      ]
+    },
+    {
+      "seed": 8107,
+      "finished": true,
+      "winner": 2,
+      "seconds": 181.40646,
+      "score": [
+        17.815044,
+        196.4422,
+        350.03607
+      ],
+      "units": [
+        3,
+        4,
+        2
+      ],
+      "combatEvents": 667,
+      "maxArmyCentroidDistanceFromHQ": [
+        17.97635,
+        20.7238,
+        28.404713
+      ]
+    },
+    {
+      "seed": 8108,
+      "finished": true,
+      "winner": 0,
+      "seconds": 207.55806,
+      "score": [
+        350.07736,
+        30.685116,
+        290.85458
+      ],
+      "units": [
+        16,
+        1,
+        0
+      ],
+      "combatEvents": 627,
+      "maxArmyCentroidDistanceFromHQ": [
+        32.00692,
+        19.405207,
+        32.90707
+      ]
+    },
+    {
+      "seed": 8109,
+      "finished": true,
+      "winner": 0,
+      "seconds": 191.00705,
+      "score": [
+        350.07736,
+        180.43431,
+        63.9053
+      ],
+      "units": [
+        10,
+        0,
+        0
+      ],
+      "combatEvents": 664,
+      "maxArmyCentroidDistanceFromHQ": [
+        32.41376,
+        26.469666,
+        21.32462
+      ]
+    },
+    {
+      "seed": 8110,
+      "finished": true,
+      "winner": 2,
+      "seconds": 201.45769,
+      "score": [
+        267.7677,
+        8.024991,
+        350.03174
+      ],
+      "units": [
+        0,
+        4,
+        13
+      ],
+      "combatEvents": 662,
+      "maxArmyCentroidDistanceFromHQ": [
+        19.19016,
+        15.619659,
+        29.42526
+      ]
+    },
+    {
+      "seed": 8111,
+      "finished": true,
+      "winner": 2,
+      "seconds": 193.00717,
+      "score": [
+        156.5118,
+        68.08029,
+        350.07806
+      ],
+      "units": [
+        1,
+        1,
+        8
+      ],
+      "combatEvents": 698,
+      "maxArmyCentroidDistanceFromHQ": [
+        23.286194,
+        20.116802,
+        28.829641
+      ]
+    },
+    {
+      "seed": 8112,
+      "finished": true,
+      "winner": 2,
+      "seconds": 154.1048,
+      "score": [
+        138.25926,
+        23.315075,
+        317.85165
+      ],
+      "units": [
+        0,
+        0,
+        14
+      ],
+      "combatEvents": 616,
+      "maxArmyCentroidDistanceFromHQ": [
+        19.860716,
+        13.719246,
+        33.465923
+      ]
+    }
+  ]
+}
