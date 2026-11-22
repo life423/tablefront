@@ -17,3 +17,4 @@ SimulationTests/.dotnet/
 TestResults/packaged-trainer-smoke/
 !Training/*.csproj
 !SimulationTests/*.csproj
+TestResults/standalone-process.json
