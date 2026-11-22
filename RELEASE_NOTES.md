@@ -1,3 +1,16 @@
+# Tablefront v0.2.1 — reliable desktop launch
+
+- Fixed a Windows shortcut startup stall that left invisible game copies and caused the "another instance is already running" warning.
+- Launch **StartTablefront.exe**, or create your desktop shortcut to that file. It starts the game with an explicit Windows application identity and reuses an existing game window.
+- Retained native-resolution output, 1.5x supersampling, 8x MSAA, sharp overlay text, the trained neural commanders and all gameplay rules.
+- Verified the repaired desktop shortcut opened a responding Tablefront window and reached scene initialization on the user's PC. No system services, registry settings or global Game Bar settings were changed.
+
+Extract the complete ZIP and keep StartTablefront.exe beside Tablefront.exe and the game folders. Unity and the .NET SDK are not needed to play.
+
+See [startup verification](Docs/STARTUP_FIX.md) for the diagnosis and launcher source.
+
+---
+
 # Tablefront — high-quality desktop build
 
 A playable Windows tabletop RTS with a player-commanded army, two neural opponents, and a three-AI spectator mode.

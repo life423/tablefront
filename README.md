@@ -8,10 +8,10 @@ A Windows tabletop RTS made in Unity. Command a miniature army against two neura
 
 1. Open the [latest release](https://github.com/life423/tablefront/releases/latest) and download the Windows ZIP.
 2. Right-click the ZIP and choose **Extract All**.
-3. Open the extracted folder and double-click **Tablefront.exe**. Keep its adjacent files and folders together.
+3. Open the extracted folder and double-click **StartTablefront.exe**. Keep its adjacent files and folders together.
 4. Choose **Play vs AI** to command Cobalt, or **Watch AI battle** to spectate.
 
-Unity, .NET, an account, and an internet connection are not required to play the release build. You can create your own desktop shortcut by right-clicking the extracted `Tablefront.exe` and choosing **Show more options → Send to → Desktop (create shortcut)**.
+Unity, the .NET SDK, an account, and an internet connection are not required to play. The small launcher uses the .NET Framework included with Windows. You can create your own desktop shortcut by right-clicking the extracted `StartTablefront.exe` and choosing **Show more options → Send to → Desktop (create shortcut)**.
 
 Your six starting units are selected. **Right-click a beacon** to advance. Keep units inside its ring to capture it; units fire at nearby enemies automatically. Beacons earn credits and victory points. Reach **350 points**, or destroy both enemy headquarters.
 
