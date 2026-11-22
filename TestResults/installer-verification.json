@@ -1,0 +1,15 @@
+{
+  "verifiedAt": "2026-11-22T17:25:44.3792228-06:00",
+  "installer": "Tablefront-Setup-v0.2.1.exe",
+  "sha256": "ba551d67842ad36f73092c32e8dc85a3060d9b7c798055545f5708d2409ec73f",
+  "size": 29602278,
+  "compiler": "Inno Setup 7.1.1 x64",
+  "installPasses": 2,
+  "matchingPayloadFiles": 190,
+  "startMenuShortcutTarget": "StartTablefront.exe",
+  "perUserUninstallRegistration": "passed",
+  "silentRunSuppressed": true,
+  "uninstallRemovedPayloadAndRegistration": true,
+  "existingDesktopShortcutUnchanged": true,
+  "notes": "Installed twice to an isolated path containing spaces. Desktop icon task disabled during QA; Start menu task enabled. Game was not launched by silent setup. No game settings were deleted."
+}
