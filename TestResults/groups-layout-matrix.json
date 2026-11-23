@@ -1,0 +1,114 @@
+[
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "help",
+    "probe": "state=help; step=0; practice=False; size=1280x720; frame=10754; overflowing=",
+    "path": "Captures/groups-help-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "shortcuts",
+    "probe": "state=shortcuts; step=0; practice=False; size=1280x720; frame=10913; overflowing=",
+    "path": "Captures/groups-shortcuts-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=1280x720; frame=11074; overflowing=",
+    "path": "Captures/groups-tutorial4-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=1280x720; frame=11234; overflowing=",
+    "path": "Captures/groups-battle-1280.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "help",
+    "probe": "state=help; step=0; practice=False; size=1024x768; frame=11459; overflowing=",
+    "path": "Captures/groups-help-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "shortcuts",
+    "probe": "state=shortcuts; step=0; practice=False; size=1024x768; frame=11622; overflowing=",
+    "path": "Captures/groups-shortcuts-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=1024x768; frame=11788; overflowing=",
+    "path": "Captures/groups-tutorial4-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=1024x768; frame=11951; overflowing=",
+    "path": "Captures/groups-battle-1024.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "help",
+    "probe": "state=help; step=0; practice=False; size=2560x1440; frame=12182; overflowing=",
+    "path": "Captures/groups-help-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "shortcuts",
+    "probe": "state=shortcuts; step=0; practice=False; size=2560x1440; frame=12349; overflowing=",
+    "path": "Captures/groups-shortcuts-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=2560x1440; frame=12521; overflowing=",
+    "path": "Captures/groups-tutorial4-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=2560x1440; frame=12690; overflowing=",
+    "path": "Captures/groups-battle-2560.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "help",
+    "probe": "state=help; step=0; practice=False; size=3440x1440; frame=12911; overflowing=",
+    "path": "Captures/groups-help-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "shortcuts",
+    "probe": "state=shortcuts; step=0; practice=False; size=3440x1440; frame=13069; overflowing=",
+    "path": "Captures/groups-shortcuts-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=3440x1440; frame=13226; overflowing=",
+    "path": "Captures/groups-tutorial4-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=3440x1440; frame=13388; overflowing=",
+    "path": "Captures/groups-battle-3440.png"
+  }
+]

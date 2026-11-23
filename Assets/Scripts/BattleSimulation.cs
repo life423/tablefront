@@ -450,7 +450,7 @@ namespace Tablefront
                         else army.Intent = "Neural policy unavailable";
                     }
                 }
-                Turret(army, dt);
+                if (!PracticeMode) Turret(army, dt);
             }
 
             // Rotate the first mover; hits are resolved together after all units have fired.
@@ -508,7 +508,7 @@ namespace Tablefront
                 { movementTarget = target.Position; move = true; }
             }
 
-            if (target == null && unit.AttackMove)
+            if (target == null && unit.AttackMove && !PracticeMode)
             {
                 Army targetBase = null;
                 if (unit.BaseTargetTeam >= 0 && Armies[unit.BaseTargetTeam].Alive)
@@ -619,6 +619,7 @@ namespace Tablefront
                 bool killed = false;
                 if (hit.BaseTeam >= 0)
                 {
+                    if (PracticeMode) continue;
                     Army army = Armies[hit.BaseTeam];
                     if (!army.Alive) continue;
                     army.BaseHealth = Mathf.Max(0f, army.BaseHealth - hit.Damage);

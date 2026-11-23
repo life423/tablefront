@@ -1,0 +1,13 @@
+{
+  "verifiedAt": "2026-11-23T00:42:40.9510935+00:00",
+  "version": "0.3.2",
+  "launchedFrom": "actual desktop Tablefront.lnk",
+  "sceneInitialized": true,
+  "runtimeExceptionsOrShaderErrors": 0,
+  "gpu": "NVIDIA GeForce RTX 5070",
+  "shutdown": "Player logged orderly input/physics shutdown before read-only window capture; no process remained",
+  "visibleScreenVerified": false,
+  "nativeGameplayInputSent": false,
+  "editorClosed": true,
+  "trainingStarted": false
+}

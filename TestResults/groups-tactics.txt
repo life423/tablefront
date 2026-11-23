@@ -1,0 +1,27 @@
+Tactical mechanics verification against actual Unity CoreModule math; no training
+PASS six consistent passable cover zones flank the beacons
+PASS reinforcement recap excludes initial deployment and records only paid recruits
+PASS all cover zones fit inside the playable board
+PASS cover membership uses actual terrain extent
+PASS invalid cover queries safely reject
+PASS open-ground rifle hit retains original weapon damage
+PASS rifle cover reduces resolved direct damage by35percent
+PASS cover protection is the rifle role, not hidden universal armour
+PASS human and AI ownership receive identical cover and weapon rules
+PASS tank shell resolves20percent anti-armour bonus against tanks
+PASS combat events identify the actual shooter and weapon for presentation
+PASS scout capture weight improves progress through shared square-root capture rule
+PASS AI scouts gain the same capture role as player scouts
+PASS capture and uncontested control time populate the battle recap
+PASS recap records a real capture and its simulation time
+PASS contested time is excluded from productive beacon control
+PASS direct and splash kills are counted once each
+PASS removed casualties are not counted a second time
+PASS rifle cover also reduces splash damage through the same resolution path
+PASS extra scout capture weight cannot override an enemy contest
+PASS HQ collapse counts disbanded losses without inventing enemy troop kills
+PASS HQ destruction supersedes an earlier turning point
+PASS cover terrain remains traversable without invisible barriers
+PASS all recap counters reset with a fresh battle
+PASS frozen neural interface remains40 observations and10 actions
+PASS: 25 tactical checks

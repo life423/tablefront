@@ -20,9 +20,9 @@ PASS Attack task presents a live marked enemy target
 PASS One left click on an enemy issues a real attack order
 PASS Attack task waits for actual target destruction
 PASS Normal combat destroys the marked enemy before advancing the attack task
-PASS 1 selects scouts instead of unexpectedly spending supplies
+PASS Scouts button selects scouts without spending supplies
 PASS A scout in cover cannot bypass the rifle cover lesson
-PASS 2 selects the rifle force
+PASS Rifles button selects the rifle force
 PASS Cover task waits for actual rifle protection
 PASS Moving a rifle into mechanical cover completes the six-task tutorial
 PASS Completing tasks does not silently start an enemy attack
@@ -34,9 +34,9 @@ PASS Exit tutorial returns safely to the title
 PASS Tab navigation cannot accidentally hand the player's army to AI
 PASS Tab gives visible UI controls keyboard focus
 PASS Shift+Tab reverses UI focus without changing commander mode
-PASS Normal 1 selects the scout class
-PASS Normal 2 selects the rifle class
-PASS Normal 3 selects the tank class
+PASS Ctrl+1 saves and 1 recalls a chosen scout group
+PASS Ctrl+2 saves and 2 recalls a chosen rifle group
+PASS Ctrl+3 saves and 3 recalls a chosen tank group
 PASS Labeled Scouts button selects its own class without shortcuts
 PASS Labeled Rifles button selects its own class without shortcuts
 PASS Labeled Tanks button selects its own class without shortcuts

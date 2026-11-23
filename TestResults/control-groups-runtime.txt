@@ -1,0 +1,50 @@
+PASS All ten groups start empty rather than silently representing troop classes
+PASS Ctrl+1 saves its own group
+PASS Ctrl+2 saves its own group
+PASS Ctrl+3 saves its own group
+PASS Ctrl+4 saves its own group
+PASS Ctrl+5 saves its own group
+PASS Ctrl+6 saves its own group
+PASS Ctrl+7 saves its own group
+PASS Ctrl+8 saves its own group
+PASS Ctrl+9 saves its own group
+PASS Ctrl+0 saves its own group
+PASS 1 recalls its exact saved selection
+PASS 2 recalls its exact saved selection
+PASS 3 recalls its exact saved selection
+PASS 4 recalls its exact saved selection
+PASS 5 recalls its exact saved selection
+PASS 6 recalls its exact saved selection
+PASS 7 recalls its exact saved selection
+PASS 8 recalls its exact saved selection
+PASS 9 recalls its exact saved selection
+PASS 0 recalls its exact saved selection
+PASS Ctrl+number replaces the previous group rather than merging it
+PASS Shift+number adds selected troops without losing existing members
+PASS Adding existing members never duplicates a troop
+PASS Right Shift supports group addition
+PASS Right Ctrl supports group assignment
+PASS Ctrl takes precedence over Shift when both modifiers are held
+PASS One troop may belong to multiple control groups
+PASS An empty assignment leaves an existing group intact
+PASS Assignment filters enemy and stale selection identifiers
+PASS Casualties disappear from the group and cannot be recalled
+PASS Group addition ignores enemy and stale identifiers
+PASS Shift+0 can create an empty group using the same addition rule
+PASS Pause suppresses assignment, addition and recall
+PASS Help suppresses assignment, addition and recall
+PASS New recruits do not silently join an existing custom group
+PASS Named Rifles button still selects every live rifle including new recruits
+PASS Number keys only recall groups and never buy troops
+PASS A single number press selects without moving the camera
+PASS Double-tapping a group number centers the camera on its live troop centroid
+PASS Shift group addition never triggers camera centering
+PASS Saving a group resets double-tap detection rather than counting as a recall
+PASS Two number presses outside the double-tap interval do not center the camera
+PASS Pressing a different group breaks the double-tap sequence
+PASS Camera centering ignores dead members
+PASS Invalid group indices safely reject every operation
+PASS Spectator mode cannot create or add command groups
+PASS Title menus ignore gameplay group shortcuts
+PASS A fresh battle clears all custom groups
+PASS Starting tutorial practice clears previous battle groups

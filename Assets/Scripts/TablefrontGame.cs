@@ -137,8 +137,10 @@ namespace Tablefront
         float masterVolume = .65f;
         Vector2 pressPosition;
         int matchIndex;
-        readonly HashSet<int>[] groups = { new HashSet<int>(), new HashSet<int>(), new HashSet<int>() };
-        readonly bool[] customGroups = new bool[3];
+        public const int ControlGroupCount = 10;
+        readonly HashSet<int>[] groups = Enumerable.Range(0, ControlGroupCount).Select(_ => new HashSet<int>()).ToArray();
+        int lastGroupSlot = -1;
+        float lastGroupTap = -10;
         readonly int[] previousOwners = new int[3];
         float previousBaseHealth, nextDangerAlert, alertUntil;
         string tacticalAlert = "";
@@ -284,7 +286,7 @@ namespace Tablefront
                     if (enemy == null)
                     {
                         if (tutorialAttackIssued) AdvanceTutorial("Target destroyed. Troops fire automatically.");
-                        else CreateTutorialTarget();
+                        else { CreateTutorialTarget(); RecenterTutorial(); }
                     }
                     break;
                 case 5:
@@ -305,6 +307,8 @@ namespace Tablefront
         void CreateTutorialTarget()
         {
             // An explicit stationary practice target, separate from ordinary AI battle setup.
+            Sim.Armies[1].BaseHealth = BattleSimulation.BaseMaxHealth;
+            Sim.Armies[1].IsAI = false; Sim.Armies[1].TurretTimer = 99999;
             Sim.Armies[1].Credits = 200; Sim.Armies[1].RecruitCooldown = 0;
             if (!Sim.Recruit(1, UnitKind.Scout)) return;
             var enemy = Sim.Units.Last(u => u.Team == 1 && u.Kind == UnitKind.Scout);
@@ -327,18 +331,15 @@ namespace Tablefront
             if (!TutorialActive) return;
             Vector2 target = TutorialTargetPosition;
             Vector2 origin = TutorialStep == 0 ? target : FriendlyCentre();
-            Vector2 centre = (origin + target) * .5f;
+            Vector2 centre = TutorialStep == 4 ? target : (origin + target) * .5f;
             wantedFocus = new Vector3(centre.x, 0, centre.y + 1.5f);
             wantedDistance = Mathf.Clamp(38 + Vector2.Distance(origin, target) * .9f, 42, 62);
             wantedYaw = 0;
         }
         void ResetBattleTracking()
         {
-            for (int i = 0; i < groups.Length; i++)
-            {
-                groups[i].Clear(); customGroups[i] = false;
-                foreach (var unit in Sim.Units) if (unit.Team == 0 && (int)unit.Kind == i) groups[i].Add(unit.Id);
-            }
+            foreach (var group in groups) group.Clear();
+            ResetGroupTap();
             for (int i = 0; i < previousOwners.Length; i++) previousOwners[i] = Sim.Points[i].Owner;
             previousBaseHealth = Sim.Armies[0].BaseHealth; nextDangerAlert = alertUntil = 0; tacticalAlert = "";
         }
@@ -371,18 +372,61 @@ namespace Tablefront
             if (!TacticalAlertAvailable) return;
             wantedFocus = new Vector3(alertPosition.x, 0, alertPosition.y); wantedDistance = 42;
         }
-        public int GroupCount(int slot) => slot >= 0 && slot < groups.Length ? groups[slot].Count : 0;
+        static string GroupKey(int slot) => ((slot + 1) % 10).ToString();
+        bool ValidGroup(int slot) => slot >= 0 && slot < groups.Length;
+        void PruneGroup(int slot) => groups[slot].RemoveWhere(id => !Sim.Units.Any(u => u.Id == id && u.Alive && u.Team == 0));
+        void ResetGroupTap() { lastGroupSlot = -1; lastGroupTap = -10; }
+        public int GroupCount(int slot)
+        {
+            if (!ValidGroup(slot)) return 0;
+            PruneGroup(slot); return groups[slot].Count;
+        }
         public void AssignGroup(int slot)
         {
-            if (!CanCommand || slot < 0 || slot >= groups.Length || Selected.Count == 0) return;
-            groups[slot].Clear(); groups[slot].UnionWith(Selected); customGroups[slot] = true;
-            Notify(new[] { "Alpha", "Bravo", "Charlie" }[slot] + " assigned · " + groups[slot].Count + " units");
+            if (!CanCommand || !ValidGroup(slot)) return;
+            ResetGroupTap();
+            var members = Sim.Units.Where(u => u.Alive && u.Team == 0 && Selected.Contains(u.Id)).Select(u => u.Id).ToArray();
+            if (members.Length == 0) { Notify("Select your troops, then press Ctrl+" + GroupKey(slot) + " to save a group."); return; }
+            ReleaseUIFocus();
+            groups[slot].Clear(); groups[slot].UnionWith(members);
+            Notify("Group " + GroupKey(slot) + " saved · " + groups[slot].Count + " units");
+        }
+        public void AddToGroup(int slot)
+        {
+            if (!CanCommand || !ValidGroup(slot)) return;
+            ResetGroupTap(); PruneGroup(slot);
+            var members = Sim.Units.Where(u => u.Alive && u.Team == 0 && Selected.Contains(u.Id)).Select(u => u.Id).ToArray();
+            if (members.Length == 0) { Notify("Select troops to add to group " + GroupKey(slot) + "."); return; }
+            ReleaseUIFocus(); groups[slot].UnionWith(members);
+            Notify("Group " + GroupKey(slot) + " updated · " + groups[slot].Count + " units");
         }
         public void RecallGroup(int slot)
         {
-            if (!CanCommand || slot < 0 || slot >= groups.Length) return;
-            if (groups[slot].Count == 0) { Notify("This force is empty. Select troops, then choose Set."); return; }
+            if (!CanCommand || !ValidGroup(slot)) return;
+            ReleaseUIFocus(); PruneGroup(slot);
+            if (groups[slot].Count == 0) { Notify("Group " + GroupKey(slot) + " is empty. Select troops, then press Ctrl+" + GroupKey(slot) + "."); return; }
             Selected.Clear(); Selected.UnionWith(groups[slot]);
+            Notify("Group " + GroupKey(slot) + " selected · " + Selected.Count + " units");
+        }
+        public void FocusGroup(int slot)
+        {
+            if (!CanCommand || !ValidGroup(slot)) return;
+            PruneGroup(slot);
+            if (groups[slot].Count == 0) return;
+            Vector2 centre = Vector2.zero;
+            foreach (var unit in Sim.Units) if (groups[slot].Contains(unit.Id)) centre += unit.Position;
+            centre /= groups[slot].Count;
+            wantedFocus = new Vector3(centre.x, 0, centre.y);
+        }
+        void ReadGroupKey(int slot, bool assigning, bool adding)
+        {
+            if (!CanCommand) return;
+            if (assigning) { AssignGroup(slot); return; }
+            if (adding) { AddToGroup(slot); return; }
+            bool center = lastGroupSlot == slot && Time.unscaledTime - lastGroupTap <= .35f;
+            RecallGroup(slot);
+            if (center) FocusGroup(slot);
+            lastGroupSlot = slot; lastGroupTap = Time.unscaledTime;
         }
         bool CanCommand => !InMenu && !Spectator && !Paused && !HelpOpen && !Sim.Finished && Sim.Armies[0].Alive;
         bool HasFocusedUI => UnityEngine.EventSystems.EventSystem.current != null &&
@@ -390,6 +434,7 @@ namespace Tablefront
             UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.activeInHierarchy;
         void ReleaseUIFocus()
         {
+            ResetGroupTap();
             navigatingUI = false;
             if (UnityEngine.EventSystems.EventSystem.current != null) UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
         }
@@ -421,7 +466,7 @@ namespace Tablefront
             wantedFocus = new Vector3(0, 0, -2); wantedDistance = 64; wantedYaw = 0;
             HUD.Refresh();
         }
-        void CancelPointerGesture() { dragging = pressStartedInWorld = false; if (HUD) HUD.DrawSelection(default, default, false); }
+        void CancelPointerGesture() { dragging = pressStartedInWorld = false; ResetGroupTap(); if (HUD) HUD.DrawSelection(default, default, false); }
         public void TogglePause() { if (InMenu || Sim.Finished) return; Paused = !Paused; CancelPointerGesture(); }
         public void ToggleHelp() { HelpOpen = !HelpOpen; CancelPointerGesture(); }
         public void CycleSpeed() { Speed = Speed == 1 ? 2 : 1; }
@@ -433,8 +478,6 @@ namespace Tablefront
             bool added = Sim.Recruit(0, kind);
             if (added)
             {
-                var unit = Sim.Units.Last(u => u.Team == 0 && u.Alive && u.Kind == kind);
-                if (!customGroups[(int)kind]) groups[(int)kind].Add(unit.Id);
                 if (TutorialActive && TutorialStep == 3 && kind == UnitKind.Rifle) tutorialRecruited = true;
                 World.PlayRecruitCue();
             }
@@ -443,6 +486,7 @@ namespace Tablefront
         public void SelectAll()
         {
             if (!CanCommand) return;
+            ReleaseUIFocus();
             Selected.Clear(); foreach (var u in Sim.Units.Where(u => u.Team == 0 && u.Alive)) Selected.Add(u.Id);
             Notify("All " + Selected.Count + " units selected");
         }
@@ -483,17 +527,15 @@ namespace Tablefront
                 if (InMenu) return; // EventSystem Submit follows the focused menu button.
                 if (kb.spaceKey.wasPressedThisFrame && !HelpOpen && !HasFocusedUI) TogglePause();
                 if (Paused || HelpOpen || Sim.Finished) return;
-                if (kb.digit1Key.wasPressedThisFrame) SelectKind(UnitKind.Scout);
-                if (kb.digit2Key.wasPressedThisFrame) SelectKind(UnitKind.Rifle);
-                if (kb.digit3Key.wasPressedThisFrame) SelectKind(UnitKind.Tank);
                 if (kb.zKey.wasPressedThisFrame) Recruit(UnitKind.Scout);
                 if (kb.xKey.wasPressedThisFrame) Recruit(UnitKind.Rifle);
                 if (kb.cKey.wasPressedThisFrame) Recruit(UnitKind.Tank);
                 bool assigning = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
-                for (int slot = 0; slot < 3; slot++)
+                bool adding = kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
+                for (int slot = 0; slot < groups.Length; slot++)
                 {
-                    bool pressed = slot == 0 ? kb.digit4Key.wasPressedThisFrame : slot == 1 ? kb.digit5Key.wasPressedThisFrame : kb.digit6Key.wasPressedThisFrame;
-                    if (pressed) { if (assigning) AssignGroup(slot); else RecallGroup(slot); }
+                    var key = (Key)((int)Key.Digit1 + slot);
+                    if (kb[key].wasPressedThisFrame) ReadGroupKey(slot, assigning, adding);
                 }
                 if ((kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed) && kb.aKey.wasPressedThisFrame) SelectAll();
                 if (kb.homeKey.wasPressedThisFrame) FocusBase();

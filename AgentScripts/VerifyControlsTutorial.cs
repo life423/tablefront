@@ -139,16 +139,16 @@ public static class VerifyControlsTutorial
             AdvanceUntil(() => game.TutorialStep >= 5, 60);
             Check(game.TutorialStep == 5 && !game.Sim.Units.Any(u => u.Id == enemyId && u.Alive), "Normal combat destroys the marked enemy before advancing the attack task");
 
-            KeyPress(Key.Digit1);
+            Button("Scouts").onClick.Invoke();
             Check(game.Selected.Count > 0 && game.Sim.Units.Where(u => game.Selected.Contains(u.Id)).All(u => u.Kind == UnitKind.Scout),
-                "1 selects scouts instead of unexpectedly spending supplies");
+                "Scouts button selects scouts without spending supplies");
             await Task.Delay(80);
             await Click(ScreenPoint(game.TutorialTargetPosition, 0));
             AdvanceUntil(() => game.Sim.Units.Any(u => u.Team == 0 && u.Kind == UnitKind.Scout && game.Sim.IsInCover(u.Position)), 30);
             Check(game.TutorialStep == 5, "A scout in cover cannot bypass the rifle cover lesson");
-            KeyPress(Key.Digit2);
+            Button("Rifles").onClick.Invoke();
             Check(game.Selected.Count > 0 && game.Sim.Units.Where(u => game.Selected.Contains(u.Id)).All(u => u.Kind == UnitKind.Rifle),
-                "2 selects the rifle force");
+                "Rifles button selects the rifle force");
             await Click(ScreenPoint(game.TutorialTargetPosition, 0));
             Check(game.TutorialStep == 5, "Cover task waits for actual rifle protection");
             AdvanceUntil(() => game.TutorialStep >= 6, 45);
@@ -179,12 +179,12 @@ public static class VerifyControlsTutorial
             Check(game.Sim.Armies[0].IsAI == priorCommander, "Shift+Tab reverses UI focus without changing commander mode");
             float initialCredits = game.Sim.Armies[0].Credits;
             int initialUnits = game.Sim.UnitCount(0);
-            KeyPress(Key.Digit1);
-            Check(game.Selected.Count == 2 && game.Sim.Units.Where(u => game.Selected.Contains(u.Id)).All(u => u.Kind == UnitKind.Scout), "Normal 1 selects the scout class");
-            KeyPress(Key.Digit2);
-            Check(game.Selected.Count == 3 && game.Sim.Units.Where(u => game.Selected.Contains(u.Id)).All(u => u.Kind == UnitKind.Rifle), "Normal 2 selects the rifle class");
-            KeyPress(Key.Digit3);
-            Check(game.Selected.Count == 1 && game.Sim.Units.Single(u => game.Selected.Contains(u.Id)).Kind == UnitKind.Tank, "Normal 3 selects the tank class");
+            Button("Scouts").onClick.Invoke(); KeyPress(Key.LeftCtrl, Key.Digit1); game.Selected.Clear(); KeyPress(Key.Digit1);
+            Check(game.Selected.Count == 2 && game.Sim.Units.Where(u => game.Selected.Contains(u.Id)).All(u => u.Kind == UnitKind.Scout), "Ctrl+1 saves and 1 recalls a chosen scout group");
+            Button("Rifles").onClick.Invoke(); KeyPress(Key.LeftCtrl, Key.Digit2); game.Selected.Clear(); KeyPress(Key.Digit2);
+            Check(game.Selected.Count == 3 && game.Sim.Units.Where(u => game.Selected.Contains(u.Id)).All(u => u.Kind == UnitKind.Rifle), "Ctrl+2 saves and 2 recalls a chosen rifle group");
+            Button("Tanks").onClick.Invoke(); KeyPress(Key.LeftCtrl, Key.Digit3); game.Selected.Clear(); KeyPress(Key.Digit3);
+            Check(game.Selected.Count == 1 && game.Sim.Units.Single(u => game.Selected.Contains(u.Id)).Kind == UnitKind.Tank, "Ctrl+3 saves and 3 recalls a chosen tank group");
             foreach (var role in new[] { ("Scouts", UnitKind.Scout), ("Rifles", UnitKind.Rifle), ("Tanks", UnitKind.Tank) })
             {
                 Button(role.Item1).onClick.Invoke();

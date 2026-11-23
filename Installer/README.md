@@ -1,6 +1,6 @@
 # Windows installer
 
-The controls/tutorial preview uses **Tablefront-Setup-v0.3.1.exe**, a single Windows installer. It packages the mouse-first command flow and separate six-task practice mode described in the [controls guide](../Docs/CONTROLS_TUTORIAL.md). It installs the complete x64 Unity player to `%LOCALAPPDATA%\Programs\Tablefront`, with desktop and Start menu shortcuts selected by default and an entry in Windows Installed apps. It needs no administrator access and never installs Unity or the .NET SDK.
+The control-groups preview uses **Tablefront-Setup-v0.3.2.exe**, a single Windows installer. It packages StarCraft-style control groups, mouse-first commands and the six-task practice mode described in the [controls guide](../Docs/CONTROLS_TUTORIAL.md). The practice update protects HQs, recovers a missing attack target even after its HQ was destroyed, and centers the actual target in visible play space. Normal-battle HQ damage and combat rules remain unchanged. It installs the complete x64 Unity player to `%LOCALAPPDATA%\Programs\Tablefront`, with desktop and Start menu shortcuts selected by default and an entry in Windows Installed apps. It needs no administrator access and never installs Unity or the .NET SDK.
 
 Both shortcuts, and the optional **Play Tablefront** action on the finish page, launch **StartTablefront.exe**. Do not retarget them to `Tablefront.exe`: the launcher supplies the explicit Windows application identity required by the [startup fix](../Docs/STARTUP_FIX.md).
 
@@ -12,12 +12,18 @@ Use [Inno Setup 7](https://jrsoftware.org/inno-setup/downloads) or a compatible 
 
 ```powershell
 .\Tools\BuildLauncher.ps1 -BuildDirectory 'C:\Builds\Tablefront'
-.\Installer\BuildInstaller.ps1 -BuildDirectory 'C:\Builds\Tablefront' -OutputDirectory 'C:\Releases' -Version '0.3.1'
+.\Installer\BuildInstaller.ps1 -BuildDirectory 'C:\Builds\Tablefront' -OutputDirectory 'C:\Releases' -Version '0.3.2'
 ```
 
-The compiler is a developer tool only. Players need only the resulting setup EXE. The script requires every runtime folder and excludes Unity's backup directory, build provenance and debug symbols. `AppId` in `Tablefront.iss` must stay stable for future upgrades. Increase the version and rebuild the installer when the game changes. The default version is **0.3.1**, and the launcher startup fix is preserved.
+The compiler is a developer tool only. Players need only the resulting setup EXE. The script requires every runtime folder and excludes Unity's backup directory, build provenance and debug symbols. `AppId` in `Tablefront.iss` must stay stable for future upgrades. Increase the version and rebuild the installer when the game changes. The default version is **0.3.2**, and the launcher startup fix is preserved.
 
 ## Verification
+
+The current 0.3.2 evidence has **208 passing checks**: [50 control-group](../TestResults/control-groups-runtime.txt), [59 updated tutorial/control](../TestResults/controls-tutorial-runtime.txt), [17 recovery](../TestResults/tutorial-target-recovery.txt), [57 mechanics](../TestResults/groups-mechanics.txt) and [25 tactical](../TestResults/groups-tactics.txt), including repeated target loss, destroyed-HQ recovery and target camera visibility. The [four-size layout matrix](../TestResults/groups-layout-matrix.json) records 16 captures with no reported TMP overflow. The [Windows player build](../TestResults/groups-build-report.json) succeeded with zero errors and warnings, reporting 107,330,060 bytes in 9.915 seconds. These checks do not establish installer packaging or native launch; fresh upgrade and native-launch evidence is recorded separately when available. The previous version's checks below are historical.
+
+### Historical 0.3.1 upgrade
+
+The [0.3.1 to 0.3.2 upgrade](../TestResults/groups-installer-verification.json) now also passes: all 190 installed payload hashes match, registration displays 0.3.2, and desktop/Start menu links use StartTablefront.exe with the correct working directory. Silent Setup did not launch the game. The actual desktop shortcut subsequently launched the installed player and scene initialization completed without runtime exceptions or shader errors. The player shut down normally before its window could be captured, so the 0.3.2 native screen is not claimed as visually verified. No native gameplay input was sent. See [native evidence](../TestResults/groups-native-startup.json).
 
 The 0.3.1 [Windows player build](../TestResults/controls-build-report.json) succeeded with zero errors and warnings. The [0.3.0 to 0.3.1 upgrade](../TestResults/controls-installer-verification.json) completed successfully, all **190 installed payload hashes** matched, registration displayed **0.3.1**, and desktop/Start menu shortcuts targeted **StartTablefront.exe** with the correct working directory. Silent Setup did not launch the game. Opening the actual desktop shortcut then produced a responding native window with completed scene initialization and zero runtime exceptions or shader errors; a read-only screenshot showed the tutorial's first task. No native gameplay input was sent. See [native startup](../TestResults/controls-native-startup.json). The user installation was preserved and upgraded; it was not uninstalled during these checks. Historical install/reinstall/uninstall verification follows separately.
 

@@ -1,0 +1,17 @@
+PASS Normal tutorial progression reaches task 3
+PASS Normal tutorial progression reaches task 4
+PASS Attack task initially has a live marked practice target
+PASS A missing uncommanded target is replaced without skipping the attack lesson
+PASS Target creation recovers a destroyed target HQ instead of failing recruitment forever
+PASS Recovered target remains stationary and unable to fire
+PASS Ten repeated target losses recover exactly one target without hitting the army cap
+PASS Automatic fire before an explicit attack cannot leave the lesson without a target or skip it
+PASS Show target centers the enemy in visible play space even when friendly troops are far away
+PASS A minute near an opposing practice HQ cannot destroy the target's recruitment source
+PASS Practice HQ turrets stay inactive even when their timers are ready
+PASS Long practice remains recoverable with a live target and no victory pressure
+PASS Recovered target accepts an explicit attack order
+PASS Normal tutorial progression reaches task 6
+PASS Normal tutorial progression reaches task 7
+PASS Recovered attack and cover lessons finish on the safe practice table
+PASS Ordinary battles retain real HQ damage outside explicit practice mode

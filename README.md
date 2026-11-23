@@ -2,14 +2,14 @@
 
 A Windows tabletop RTS made in Unity. Command a miniature army against two neural commanders, or watch all three fight through self-play tactics.
 
-The **0.3.1 controls playtest** makes commanding mouse-first and adds a separate six-task tutorial. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.3.1-preview.1/Tablefront-Setup-v0.3.1.exe) or read [controls and tutorial](Docs/CONTROLS_TUTORIAL.md). It also includes the [0.3.0 tactical improvements](Docs/TACTICAL_UPDATE.md). The stable release remains 0.2.1 while these changes receive human playtesting.
+The **0.3.2 controls playtest** adds StarCraft-style control groups to the mouse-first commands and separate six-task tutorial. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.3.2-preview.1/Tablefront-Setup-v0.3.2.exe) or read [controls and tutorial](Docs/CONTROLS_TUTORIAL.md). It also includes the [0.3.0 tactical improvements](Docs/TACTICAL_UPDATE.md). The stable release remains 0.2.1 while these changes receive human playtesting.
 
 ![Tablefront battlefield](Docs/Images/tablefront-battle.png)
 
 ## Play
 
-1. [Download the 0.3.1 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.3.1-preview.1/Tablefront-Setup-v0.3.1.exe).
-2. Double-click **Tablefront-Setup-v0.3.1.exe** and choose **Install**.
+1. [Download the 0.3.2 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.3.2-preview.1/Tablefront-Setup-v0.3.2.exe).
+2. Double-click **Tablefront-Setup-v0.3.2.exe** and choose **Install**.
 3. Open **Tablefront** from the desktop icon or Start menu.
 4. Choose **Tutorial · Start here** to learn by playing. After completing it, choose **Play a battle** for a fresh match. **Play vs AI** and **Watch AI battle** are also available on the title screen.
 
@@ -19,7 +19,7 @@ Unity, the .NET SDK, an account, and an internet connection are not required to 
 
 **Click a blue unit** to select it, or use **Scouts**, **Rifles**, **Tanks** or **Select whole army** below the table. Then **click the ground to move** or **click an enemy to attack**. Keep troops inside a beacon's ring to capture it; units fire automatically when in range. Beacons earn credits and victory points. Reach **350 points**, or destroy both enemy headquarters.
 
-Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.3.1.
+Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.3.2.
 
 ## Controls
 
@@ -32,7 +32,10 @@ Prefer the older stable build? [Download 0.2.1](https://github.com/life423/table
 | Shift + select | Add or remove units from the selection |
 | Right-click ground / enemy | Alternative move / attack |
 | Select whole army / Ctrl+A | Select your whole army |
-| 1 / 2 / 3 | Select Scouts / Rifles / Tanks; does not spend credits |
+| Ctrl+0–9 | Save or replace that control group with the selected units |
+| Shift+0–9 | Add selected units to that control group |
+| 0–9 | Select a saved control group |
+| Double-tap 0–9 | Select the group and center the camera on it |
 | Z / X / C | Recruit Scout / Rifle / Tank at your HQ |
 | WASD / arrows | Pan the camera |
 | Mouse wheel | Zoom |
@@ -49,7 +52,7 @@ Prefer the older stable build? [Download 0.2.1](https://github.com/life423/table
 
 Scouts cost **55 credits**, rifles **85**, and tanks **170**. Recruitment shares a short cooldown; each army can field **26 units**. If your HQ falls, you can watch the remaining battle or restart. Switching away from the game pauses the match. Help includes volume and reduced-motion settings.
 
-Optional custom groups remain on **4/5/6** to recall and **Ctrl+4/5/6** to assign. You can play without shortcuts; **Help → Keyboard shortcuts** lists the advanced controls.
+To split your infantry into squads, drag-select some Rifles and press **Ctrl+1**. Select another squad and press **Ctrl+2**. Press **1** or **2** to select those squads later; **Shift+1** adds the current selection to group 1. Use the named **Scouts / Rifles / Tanks** buttons to select a whole troop class. Numbers no longer select troop classes. You can play without shortcuts; **Help → Keyboard shortcuts** lists the optional controls.
 
 ## Tutorial
 
