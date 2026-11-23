@@ -1,0 +1,36 @@
+PASS Greenfield can be previewed without starting a battle
+PASS Greenfield starts its actual expanded-roster layout
+PASS Greenfield opening camera keeps HQ tops between header and command deck
+PASS Greenfield rematch preserves the battlefield and resets the simulation
+PASS Ridgeway can be previewed without starting a battle
+PASS Ridgeway starts its actual expanded-roster layout
+PASS Ridgeway opening camera keeps HQ tops between header and command deck
+PASS Ridgeway rematch preserves the battlefield and resets the simulation
+PASS Dust Basin can be previewed without starting a battle
+PASS Dust Basin starts its actual expanded-roster layout
+PASS Dust Basin opening camera keeps HQ tops between header and command deck
+PASS Dust Basin rematch preserves the battlefield and resets the simulation
+PASS River Crossing can be previewed without starting a battle
+PASS River Crossing starts its actual expanded-roster layout
+PASS River Crossing opening camera keeps HQ tops between header and command deck
+PASS River Crossing rematch preserves the battlefield and resets the simulation
+PASS Tutorial uses its proven Greenfield setup independently of the chosen battle map
+PASS Leaving practice restores the selected map preview
+PASS A arms attack-move without panning the camera
+PASS An armed attack-move click gives the destination order and returns to normal selection
+PASS Escape cancels a pending order before opening Pause
+PASS Ordinary movement stays distinct from attack-move
+PASS S stops selected troops without moving the camera
+PASS Arrow keys pan the camera independently of command keys
+PASS H holds position without leaving a movement order
+PASS A new movement order releases Hold
+PASS Explicit attack-move enables engagement on the route
+PASS Pause cancels an armed order
+PASS Help cancels an armed order
+PASS V recruits a paid Gunner from the same roster as the AI
+PASS B recruits paid Artillery
+PASS Existing control groups save, extend and recall the new unit classes
+PASS Double-click setup contains multiple visible same-class troops
+PASS Double-click selects visible troops of the same class without selecting offscreen units
+PASS Pointer positions outside the viewport cannot send world orders
+PASS Next battlefield starts a fresh match on the next level

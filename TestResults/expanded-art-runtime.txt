@@ -1,0 +1,35 @@
+PASS Greenfield displays exactly its own cached landscape
+PASS Greenfield keeps the continuous terrain cosmetic and below miniature bases
+PASS Greenfield point art matches actual objective positions
+PASS Greenfield HQ art follows the actual deployment layout
+PASS Ridgeway displays exactly its own cached landscape
+PASS Ridgeway keeps the continuous terrain cosmetic and below miniature bases
+PASS Ridgeway point art matches actual objective positions
+PASS Ridgeway HQ art follows the actual deployment layout
+PASS Dust Basin displays exactly its own cached landscape
+PASS Dust Basin keeps the continuous terrain cosmetic and below miniature bases
+PASS Dust Basin point art matches actual objective positions
+PASS Dust Basin HQ art follows the actual deployment layout
+PASS River Crossing displays exactly its own cached landscape
+PASS River Crossing keeps the continuous terrain cosmetic and below miniature bases
+PASS River Crossing point art matches actual objective positions
+PASS River Crossing HQ art follows the actual deployment layout
+PASS Four layouts own distinct generated ground meshes
+PASS Two further cycles through all four maps and five classes allocate no new owned meshes, materials or textures
+PASS Landscape and miniature art add no decorative gameplay colliders
+PASS Scout has its own physical base class mark
+PASS Rifle has its own physical base class mark
+PASS Tank has its own physical base class mark
+PASS Gunner has its own physical base class mark
+PASS Artillery has its own physical base class mark
+PASS Gunner uses the broad crew-served weapon model
+PASS Artillery uses an elevated long gun rather than the tank or rifle silhouette
+PASS Selected troops have a strong ring and visible health
+PASS Healthy unselected troops do not add idle health clutter
+PASS Hover reveals the targeted miniature and its health
+PASS Actual health loss briefly marks the damaged base
+PASS Incoming-hit marker expires instead of becoming a permanent overlay
+PASS Reduced motion suppresses the hit flash while preserving health feedback
+PASS Artillery events use a visible curved shell trace
+PASS Repeated new-unit shots retain the fixed 128-slot effect pool
+PASS All active expanded-unit and map materials use supported shaders

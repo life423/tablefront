@@ -1,0 +1,33 @@
+state=title; step=0; practice=False; size=1024x768; frame=16403; overflowing=
+state=battle; step=0; practice=False; size=1024x768; frame=16565; overflowing=
+state=help; step=0; practice=False; size=1024x768; frame=16723; overflowing=
+state=shortcuts; step=0; practice=False; size=1024x768; frame=16888; overflowing=
+state=tutorial4; step=4; practice=True; size=1024x768; frame=17043; overflowing=
+state=tutorial6; step=6; practice=True; size=1024x768; frame=17205; overflowing=
+state=title; step=0; practice=False; size=1280x720; frame=23313; overflowing=
+state=battle; step=0; practice=False; size=1280x720; frame=23480; overflowing=
+state=help; step=0; practice=False; size=1280x720; frame=23644; overflowing=
+state=shortcuts; step=0; practice=False; size=1280x720; frame=23804; overflowing=
+state=tutorial4; step=4; practice=True; size=1280x720; frame=23966; overflowing=
+state=tutorial6; step=6; practice=True; size=1280x720; frame=24126; overflowing=
+state=title; step=0; practice=False; size=2560x1440; frame=24354; overflowing=
+state=battle; step=0; practice=False; size=2560x1440; frame=24560; overflowing=
+state=help; step=0; practice=False; size=2560x1440; frame=24766; overflowing=
+state=shortcuts; step=0; practice=False; size=2560x1440; frame=24928; overflowing=
+state=tutorial4; step=4; practice=True; size=2560x1440; frame=25087; overflowing=
+state=tutorial6; step=6; practice=True; size=2560x1440; frame=25246; overflowing=
+state=title; step=0; practice=False; size=3440x1440; frame=25463; overflowing=
+state=battle; step=0; practice=False; size=3440x1440; frame=25623; overflowing=
+state=help; step=0; practice=False; size=3440x1440; frame=25784; overflowing=
+state=shortcuts; step=0; practice=False; size=3440x1440; frame=25943; overflowing=
+state=tutorial4; step=4; practice=True; size=3440x1440; frame=26105; overflowing=
+state=tutorial6; step=6; practice=True; size=3440x1440; frame=26266; overflowing=
+state=help; step=0; practice=False; size=1024x768; frame=8204; overflowing=
+state=tutorial6; step=6; practice=True; size=1024x768; frame=8367; overflowing=
+Actual opening camera Greenfield 1280x720
+Actual opening camera Ridgeway 1280x720
+Actual opening camera DustBasin 1280x720
+Actual opening camera RiverCrossing 1280x720
+state=paused; step=0; practice=False; size=1024x768; frame=301; overflowing=
+state=results; step=0; practice=False; size=1024x768; frame=462; overflowing=
+state=artillery; step=0; practice=False; size=1024x768; frame=619; overflowing=

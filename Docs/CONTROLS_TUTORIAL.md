@@ -1,6 +1,6 @@
-# Tablefront 0.4.1 controls and tutorial
+# Tablefront controls and tutorial
 
-The 0.4.1 fix lets step 5 finish when the marked practice unit is destroyed, including by automatic fire. Its heading now reads **TUTORIAL — STEP 1 OF 6**. Graphics from 0.4.0 and the control-group mapping from 0.3.2 remain. Current verification appears below, followed by version-specific historical evidence.
+The 0.5.0 update adds five unit classes, visible Stop/Hold/Attack-move commands and four skirmish maps; see the [expanded interface](EXPANDED_UI.md) and [release verification](RELEASE_v0.5.0.md). Camera pan uses arrows or middle drag, leaving A/S/H for army orders. The 0.4.1 fix still lets step 5 finish when the marked practice unit is destroyed, including by automatic fire. Its heading reads **TUTORIAL — STEP 1 OF 6**. Version-specific historical evidence follows below.
 
 November 22, 2026. The user approved StarCraft-style control groups after the 0.3.1 mouse-first/tutorial playtest. Control groups now use all ten number keys, while the named force buttons and mouse commands remain available. This preserves the tabletop style and normal combat rules. AI training and CudaRL integration remain paused.
 
@@ -65,9 +65,12 @@ The earlier 0.3.2 recovery fix protects practice HQs so ordinary automatic HQ at
 | 0–9 | Select a saved control group |
 | Double-tap 0–9 | Select the group and center the camera |
 | Z / X / C | Recruit Scout / Rifle / Tank |
+| V / B | Recruit Gunner / Artillery |
+| A, then destination | Attack-move |
+| S / H | Stop / Hold position |
 | Ctrl+A | Select whole army |
 | Shift+click / Shift+drag | Add or remove from selection |
-| WASD / arrows | Pan the camera |
+| Arrow keys | Pan the camera |
 | Mouse wheel / middle drag | Zoom / pan |
 | Q / E | Turn the table |
 | Home / F | Focus HQ / active alert |
@@ -78,7 +81,7 @@ The earlier 0.3.2 recovery fix protects practice HQs so ordinary automatic HQ at
 
 ## Verification
 
-### Current 0.4.1 verification
+### Historical 0.4.1 verification
 
 The patch passes **83 automated checks**: [59 controls/tutorial checks](../TestResults/controls-tutorial-runtime.txt) and [24 target-recovery checks](../TestResults/tutorial-target-recovery.txt). These cover the complete six-task flow, automatic-fire kills advancing exactly once, recovery when a live target disappears before or after an attack order, overlapping-friendly target clicks, protected practice HQs and completion into a normal battle. The recovery checks also confirm ordinary battles retain real HQ damage.
 

@@ -1,0 +1,14 @@
+{
+  "verifiedAt": "2026-11-23T12:54:17.0385529-06:00",
+  "version": "0.5.0",
+  "installer": "Tablefront-Setup-v0.5.0.exe",
+  "sha256": "04f9e5a5d12b103cee676f4277132843ea7fbfa493277541bdde1d373bea3a90",
+  "installerSize": 29760435,
+  "upgradedFrom": "0.4.1",
+  "matchingPayloadFiles": 190,
+  "desktopAndStartMenuTarget": "StartTablefront.exe",
+  "perUserRegistration": "passed",
+  "silentSetupDidNotLaunchGame": true,
+  "policySha256": "07ee559f4ae04a0023d0d451757a4bb2772e18c7aec1c52ca89eaefee3052181",
+  "trainingStarted": false
+}

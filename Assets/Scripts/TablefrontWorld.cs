@@ -12,9 +12,9 @@ namespace Tablefront
     {
         sealed class Miniature
         {
-            public GameObject Root, Selection, Flash, Cover;
+            public GameObject Root, Selection, Flash, Cover, Damage;
             public Transform Hull, HealthRoot, HealthFill, Barrel;
-            public float Recoil;
+            public float Recoil, PreviousHealth, DamageLife;
             public UnitKind Kind;
             public Vector3 Previous;
             public TablefrontMiniatureArt.Rig Art;
@@ -51,6 +51,8 @@ namespace Tablefront
         readonly Dictionary<int, Miniature> miniatures = new Dictionary<int, Miniature>();
         readonly Dictionary<int, Landmark> pointViews = new Dictionary<int, Landmark>();
         readonly Dictionary<int, Landmark> headquarters = new Dictionary<int, Landmark>();
+        readonly Dictionary<BattlefieldId, Transform> battlefieldRoots = new Dictionary<BattlefieldId, Transform>();
+        BattlefieldId activeBattlefield = (BattlefieldId)(-1);
         readonly List<int> removed = new List<int>();
         readonly List<Material> ownedMaterials = new List<Material>();
         readonly List<Mesh> ownedMeshes = new List<Mesh>();
@@ -69,7 +71,7 @@ namespace Tablefront
         TablefrontLandmarkArt.Kit landmarkArt;
         ReflectionProbe studioProbe;
         VolumeProfile studioProfile;
-        Mesh ringMesh, rockMesh;
+        Mesh ringMesh, selectionMesh, rockMesh;
         Transform orderMarker;
         float orderLife;
         Transform tutorialTargetRoot, tutorialTargetRing, tutorialTargetBacking, tutorialTargetPlate;
@@ -87,6 +89,7 @@ namespace Tablefront
         BattleSimulation coverSimulation;
         bool built;
         public bool ReducedMotion { get; set; }
+        public int HoveredUnitId { get; set; } = -1;
 
         public void Build(Camera camera)
         {
@@ -101,6 +104,7 @@ namespace Tablefront
             miniatureArt = new TablefrontMiniatureArt(mesh => OwnMesh(mesh));
             landmarkArt = new TablefrontLandmarkArt.Kit(OwnMesh, ink, ceramic, brass, stone, sand);
             ringMesh = OwnMesh(MakeRing(1f, .89f, 64));
+            selectionMesh = OwnMesh(MakeRing(1f, .82f, 64));
             rockMesh = OwnMesh(MakeRock());
             Table();
             Lighting();
@@ -162,12 +166,6 @@ namespace Tablefront
             Box("Walnut plinth", scenery, new Vector3(0, -1.45f, 0), new Vector3(54, 2.1f, 54), walnut);
             Box("Raised bevel", scenery, new Vector3(0, -.35f, 0), new Vector3(53.5f, .25f, 53.5f), edge);
             Box("Brass inner lip", scenery, new Vector3(0, -.18f, 0), new Vector3(51.4f, .13f, 51.4f), brass);
-            TablefrontTerrainArt.Build(scenery, new TablefrontTerrainArt.Palette
-            {
-                Ground = terrain, Soil = sand, Stone = stone, Bark = walnut,
-                Grass = foliage, GrassDry = grassDry, Leaves = foliage, LeavesLight = foliageLight,
-                OwnMesh = OwnMesh, OwnTexture = texture => { ownedTextures.Add(texture); return texture; }
-            });
             // Fine ruler ticks and brass hardware emphasize that this is a physical table.
             for (var i = -24; i <= 24; i += 2)
             {
@@ -267,6 +265,7 @@ namespace Tablefront
         public void Render(BattleSimulation sim, ICollection<int> selected)
         {
             if (!built || sim == null) return;
+            SetBattlefield(sim);
             if (coverSimulation != sim) BuildCover(sim);
             present.Clear();
             float blend = Application.isPlaying && !ReducedMotion ? 1 - Mathf.Exp(-22 * Time.unscaledDeltaTime) : 1;
@@ -287,11 +286,19 @@ namespace Tablefront
                     model.Hull.localRotation = Quaternion.Euler(!ReducedMotion ? -model.Recoil * 8 : 0, 0, gait * (u.Kind == UnitKind.Scout ? 1.2f : .45f));
                 }
                 model.Art.Tick(sim.Elapsed, Mathf.Clamp01(Mathf.Sqrt(movement) * 5), model.Recoil, ReducedMotion);
-                model.Selection.SetActive(selected != null && selected.Contains(u.Id));
+                bool isSelected = selected != null && selected.Contains(u.Id);
+                bool isHovered = u.Id == HoveredUnitId;
+                if (u.Health < model.PreviousHealth - .01f) model.DamageLife = .19f;
+                model.PreviousHealth = u.Health;
+                model.Selection.SetActive(isSelected || isHovered);
+                model.Selection.transform.localScale = Vector3.one * (BaseRadius(u.Kind) + (isSelected ? .25f : .14f));
+                model.Damage.SetActive(model.DamageLife > 0 && !ReducedMotion);
                 model.Cover.SetActive(sim.IsProtected(u));
                 model.Flash.SetActive(u.ShotFlash > .01f);
-                model.HealthRoot.gameObject.SetActive(u.Health < u.MaxHealth - .1f || (selected != null && selected.Contains(u.Id)));
+                model.HealthRoot.gameObject.SetActive(u.Health < u.MaxHealth - .1f || isSelected || isHovered);
                 model.HealthRoot.rotation = view.transform.rotation;
+                float healthScale = Mathf.Clamp(Vector3.Distance(view.transform.position, model.Root.transform.position) / 47f, 1, 1.65f);
+                model.HealthRoot.localScale = Vector3.one * healthScale;
                 float fraction = Mathf.Clamp01(u.Health / Mathf.Max(1, u.MaxHealth));
                 model.HealthFill.localScale = new Vector3(.88f * fraction, .075f, .02f);
                 model.HealthFill.localPosition = new Vector3(-.44f * (1 - fraction), 0, -.012f);
@@ -301,6 +308,7 @@ namespace Tablefront
             foreach (var point in sim.Points)
             {
                 if (!pointViews.TryGetValue(point.Id, out var lm)) { lm = CreatePoint(point); pointViews.Add(point.Id, lm); }
+                lm.Root.transform.position = V3(point.Position, .025f);
                 var mat = point.Owner >= 0 ? faction[point.Owner] : neutral;
                 lm.Flag.sharedMaterial = mat; lm.Ring.sharedMaterial = point.Owner >= 0 ? factionBright[point.Owner] : neutral;
                 lm.Progress.gameObject.SetActive(point.CapturingTeam >= 0 && point.CaptureProgress > .01f);
@@ -310,12 +318,36 @@ namespace Tablefront
             foreach (var army in sim.Armies)
             {
                 if (!headquarters.TryGetValue(army.Id, out var lm)) { lm = CreateHeadquarters(army); headquarters.Add(army.Id, lm); }
+                lm.Root.transform.position = V3(army.BasePosition, .02f);
                 lm.Root.SetActive(army.Alive);
                 if (lm.Health != null) lm.Health.localScale = new Vector3(Mathf.Clamp(army.BaseHealth / BattleSimulation.BaseMaxHealth, .01f, 1f) * 3.1f, .09f, .08f);
             }
             RenderOrders(sim, selected);
             foreach (var text in worldLabels) if (text != null) text.transform.rotation = view.transform.rotation;
             RenderTutorialTarget();
+        }
+
+        /// <summary>Each authored landscape is generated once, then reused on future map switches.</summary>
+        public void SetBattlefield(BattleSimulation sim)
+        {
+            if (!built || sim == null || sim.Battlefield == null || activeBattlefield == sim.Battlefield.Id) return;
+            foreach (var pair in battlefieldRoots) pair.Value.gameObject.SetActive(false);
+            if (!battlefieldRoots.TryGetValue(sim.Battlefield.Id, out var root))
+            {
+                root = Group(sim.Battlefield.Name + " landscape", transform);
+                var groundMaterial = Mat(sim.Battlefield.Name + " flock", TablePalette.Terrain, .1f);
+                TablefrontTerrainArt.Build(root, new TablefrontTerrainArt.Palette
+                {
+                    Ground = groundMaterial, Soil = sand, Stone = stone, Bark = walnut,
+                    Grass = foliage, GrassDry = grassDry, Leaves = foliage, LeavesLight = foliageLight,
+                    OwnMesh = OwnMesh, OwnTexture = texture => { ownedTextures.Add(texture); return texture; }
+                }, sim.Battlefield);
+                CombineStatic(root);
+                battlefieldRoots.Add(sim.Battlefield.Id, root);
+            }
+            activeBattlefield = sim.Battlefield.Id;
+            root.gameObject.SetActive(true);
+            if (studioProbe != null) studioProbe.RenderProbe();
         }
 
         /// <summary>One reusable, noninteractive world guide for the current tutorial task.</summary>
@@ -469,20 +501,54 @@ namespace Tablefront
             var root = Group(u.Kind + " miniature " + u.Id, pieces);
             root.position = V3(u.Position, .055f); root.rotation = Quaternion.Euler(0, u.Heading, 0);
             var hull = Group("Animated model", root);
-            bool tank = u.Kind == UnitKind.Tank;
-            float radius = tank ? .92f : .66f;
+            bool tank = u.Kind == UnitKind.Tank || u.Kind == UnitKind.Artillery;
+            float radius = BaseRadius(u.Kind);
             Part("Dark beveled gaming base", root, PrimitiveType.Cylinder, new Vector3(0, .07f, 0), new Vector3(radius * 2, .07f, radius * 2), ink);
             Part("Enamel base top", root, PrimitiveType.Cylinder, new Vector3(0, .145f, 0), new Vector3(radius * 1.83f, .016f, radius * 1.83f), faction[u.Team]);
             var art = miniatureArt.Build(u.Kind, hull, faction[u.Team], ink, ceramic, steel, brass, factionBright[u.Team], muzzle, u.Id);
             GameObject flash = art.Flash;
-            var selected = MeshPart("Selected unit ring", root, ringMesh, new Vector3(0, .022f, 0), Vector3.one * (radius + .2f), factionBright[u.Team]).gameObject;
+            ClassMark(root, u.Kind, radius);
+            var selected = MeshPart("Selected unit ring", root, selectionMesh, new Vector3(0, .022f, 0), Vector3.one * (radius + .25f), factionBright[u.Team]).gameObject;
             selected.SetActive(false);
+            var damage = MeshPart("Brief incoming hit marker", root, selectionMesh, new Vector3(0, .16f, 0), Vector3.one * (radius + .09f), muzzle).gameObject;
+            damage.SetActive(false);
             var cover = MeshPart("Protected rifle ring", root, ringMesh, new Vector3(0, .028f, 0), Vector3.one * (radius + .06f), brass).gameObject;
             cover.SetActive(false);
-            var health = Group("Billboard health", root); health.localPosition = new Vector3(0, tank ? 1.68f : 1.75f, 0);
+            var health = Group("Billboard health", root); health.localPosition = new Vector3(0, u.Kind == UnitKind.Artillery ? 2.2f : tank ? 1.68f : 1.75f, 0);
             Box("Health backing", health, Vector3.zero, new Vector3(.98f, .13f, .035f), ink);
             var fill = Box("Health", health, new Vector3(0, 0, -.012f), new Vector3(.88f, .075f, .02f), factionBright[u.Team]);
-            return new Miniature { Root = root.gameObject, Hull = hull, Selection = selected, Cover = cover, Flash = flash, HealthRoot = health, HealthFill = fill, Kind = u.Kind, Barrel = art.Barrel, Art = art };
+            return new Miniature { Root = root.gameObject, Hull = hull, Selection = selected, Cover = cover, Flash = flash, Damage = damage,
+                HealthRoot = health, HealthFill = fill, Kind = u.Kind, Barrel = art.Barrel, Art = art, PreviousHealth = u.Health };
+        }
+
+        static float BaseRadius(UnitKind kind) => kind == UnitKind.Tank ? .97f : kind == UnitKind.Artillery ? 1.08f : kind == UnitKind.Gunner ? .82f : .72f;
+
+        void ClassMark(Transform parent, UnitKind kind, float radius)
+        {
+            // Cast ivory symbols belong to the physical base, rather than adding more
+            // floating labels. Different shapes remain readable without faction color.
+            var mark = Group(kind + " cast class insignia", parent);
+            mark.localPosition = new Vector3(0, .167f, -radius * .77f);
+            switch (kind)
+            {
+                case UnitKind.Scout:
+                    foreach (float side in new[] { -1f, 1f })
+                        Box("Recon chevron", mark, new Vector3(side * .10f, 0, 0), new Vector3(.25f, .025f, .06f), ceramic).localEulerAngles = new Vector3(0, side * 35, 0);
+                    break;
+                case UnitKind.Rifle:
+                    Box("Rifle horizontal bar", mark, Vector3.zero, new Vector3(.35f, .025f, .075f), ceramic);
+                    break;
+                case UnitKind.Gunner:
+                    foreach (float z in new[] { -.065f, .065f }) Box("Support double bar", mark, new Vector3(0, 0, z), new Vector3(.39f, .025f, .06f), ceramic);
+                    break;
+                case UnitKind.Tank:
+                    Box("Armor diamond", mark, Vector3.zero, new Vector3(.23f, .025f, .23f), ceramic).localEulerAngles = new Vector3(0, 45, 0);
+                    break;
+                case UnitKind.Artillery:
+                    Part("Artillery roundel", mark, PrimitiveType.Cylinder, Vector3.zero, new Vector3(.28f, .018f, .28f), ceramic);
+                    Part("Artillery roundel center", mark, PrimitiveType.Cylinder, new Vector3(0, .02f, 0), new Vector3(.12f, .018f, .12f), ink);
+                    break;
+            }
         }
 
         Landmark CreatePoint(ControlPoint p)
@@ -565,17 +631,26 @@ namespace Tablefront
             for (var i = 0; i < events.Count; i++)
             {
                 var e = events[i]; var effect = effects[effectCursor++ % effects.Length];
-                bool heavy = e.Heavy || e.WeaponKind == UnitKind.Tank;
+                bool artillery = e.WeaponKind == UnitKind.Artillery;
+                bool heavy = e.Heavy || e.WeaponKind == UnitKind.Tank || artillery;
                 effect.MaxLife = heavy ? .48f : .22f; effect.Life = effect.MaxLife; effect.Heavy = heavy || e.Killed;
                 effect.Trace.enabled = true; effect.Trace.sharedMaterial = e.Heavy ? muzzle : factionBright[Mathf.Clamp(e.Team, 0, 2)];
-                effect.Trace.startWidth = heavy ? .13f : e.WeaponKind == UnitKind.Scout ? .045f : .065f; effect.Trace.endWidth = heavy ? .08f : .025f;
+                effect.Trace.startWidth = heavy ? .16f : e.WeaponKind == UnitKind.Gunner ? .095f : e.WeaponKind == UnitKind.Scout ? .045f : .065f; effect.Trace.endWidth = heavy ? .09f : .035f;
                 Vector3 origin = V3(e.From, heavy ? 1 : .85f);
                 if (miniatures.TryGetValue(e.ShooterId, out var model))
                 {
                     model.Recoil = heavy ? 1f : .18f;
                     if (model.Flash != null) origin = model.Flash.transform.position;
                 }
-                effect.Trace.SetPosition(0, origin); effect.Trace.SetPosition(1, V3(e.To, .75f));
+                Vector3 destination = V3(e.To, .75f);
+                effect.Trace.positionCount = artillery ? 9 : 2;
+                if (artillery)
+                    for (int p = 0; p < 9; p++)
+                    {
+                        float t = p / 8f;
+                        effect.Trace.SetPosition(p, Vector3.Lerp(origin, destination, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 2.2f);
+                    }
+                else { effect.Trace.SetPosition(0, origin); effect.Trace.SetPosition(1, destination); }
                 effect.Impact.position = V3(e.To, .08f); effect.Impact.localScale = Vector3.one * .15f;
                 effect.Impact.GetComponent<Renderer>().sharedMaterial = e.Killed || e.Heavy ? muzzle : factionBright[Mathf.Clamp(e.Team, 0, 2)];
                 effect.Impact.gameObject.SetActive(true);
@@ -595,7 +670,7 @@ namespace Tablefront
             var wreck = wrecks[wreckCursor++ % wrecks.Length];
             wreck.Root.position = model.Root.transform.position;
             wreck.Root.rotation = model.Root.transform.rotation;
-            wreck.Root.localScale = Vector3.one * (model.Kind == UnitKind.Tank ? 1.2f : .8f);
+            wreck.Root.localScale = Vector3.one * (model.Kind == UnitKind.Tank || model.Kind == UnitKind.Artillery ? 1.2f : .8f);
             wreck.Life = 1.8f; wreck.Root.gameObject.SetActive(true);
         }
 
@@ -626,7 +701,11 @@ namespace Tablefront
         {
             float dt = Time.unscaledDeltaTime;
             lightCooldown -= dt; heavyCooldown -= dt;
-            foreach (var model in miniatures.Values) model.Recoil = Mathf.MoveTowards(model.Recoil, 0, dt * 5.5f);
+            foreach (var model in miniatures.Values)
+            {
+                model.Recoil = Mathf.MoveTowards(model.Recoil, 0, dt * 5.5f);
+                model.DamageLife = Mathf.Max(0, model.DamageLife - dt);
+            }
             for (var i = 0; i < effects.Length; i++)
             {
                 var e = effects[i]; if (e == null || e.Life <= 0) continue;
@@ -668,6 +747,7 @@ namespace Tablefront
             lightCooldown = heavyCooldown = 0;
             orderLife = 0; if (orderMarker != null) orderMarker.gameObject.SetActive(false);
             tutorialTargetVisible = false;
+            HoveredUnitId = -1;
             if (tutorialTargetRoot != null) tutorialTargetRoot.gameObject.SetActive(false);
         }
 
@@ -722,21 +802,26 @@ namespace Tablefront
 
         void CombineScenery()
         {
+            CombineStatic(scenery);
+        }
+
+        void CombineStatic(Transform root)
+        {
             // One mesh per shared material replaces hundreds of tiny static draw submissions.
             var groups = new Dictionary<Material, List<CombineInstance>>();
-            var filters = scenery.GetComponentsInChildren<MeshFilter>();
+            var filters = root.GetComponentsInChildren<MeshFilter>();
             foreach (var f in filters)
             {
                 var r = f.GetComponent<MeshRenderer>(); if (r == null || f.sharedMesh == null) continue;
                 if (!groups.TryGetValue(r.sharedMaterial, out var list)) { list = new List<CombineInstance>(); groups.Add(r.sharedMaterial, list); }
-                list.Add(new CombineInstance { mesh = f.sharedMesh, transform = scenery.worldToLocalMatrix * f.transform.localToWorldMatrix });
+                list.Add(new CombineInstance { mesh = f.sharedMesh, transform = root.worldToLocalMatrix * f.transform.localToWorldMatrix });
                 r.enabled = false;
             }
             foreach (var pair in groups)
             {
                 var mesh = new Mesh { name = "Combined table " + pair.Key.name, indexFormat = IndexFormat.UInt32 };
                 mesh.CombineMeshes(pair.Value.ToArray(), true, true); ownedMeshes.Add(mesh);
-                MeshPart(mesh.name, scenery, mesh, Vector3.zero, Vector3.one, pair.Key);
+                MeshPart(mesh.name, root, mesh, Vector3.zero, Vector3.one, pair.Key);
             }
         }
 

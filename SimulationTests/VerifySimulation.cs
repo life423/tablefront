@@ -34,6 +34,7 @@ Check(!new BattleSimulation(false).Armies[0].IsAI && new BattleSimulation(true).
 foreach (UnitKind kind in Enum.GetValues(typeof(UnitKind)))
 {
     sim = Manual();
+    sim.Armies[0].Credits = Mathf.Max(sim.Armies[0].Credits, BattleSimulation.Cost(kind));
     float oldCredits = sim.Armies[0].Credits;
     int oldCount = sim.UnitCount(0);
     Check(sim.Recruit(0, kind), kind + " recruitment succeeds with full cost available");

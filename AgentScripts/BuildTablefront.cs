@@ -39,7 +39,7 @@ public static class BuildTablefront
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         new GameObject("Tablefront match director").AddComponent<TablefrontGame>();
         PlayerSettings.companyName = "Lumen Workshop"; PlayerSettings.productName = "Tablefront";
-        PlayerSettings.bundleVersion = "0.4.1";
+        PlayerSettings.bundleVersion = "0.5.0";
         // Avoid Windows.Gaming.Input startup stalls on this keyboard/mouse desktop game.
         PlayerSettings.windowsGamepadBackendHint = WindowsGamepadBackendHint.WindowsGamepadBackendHintXInput;
         PlayerSettings.defaultScreenWidth = 2560; PlayerSettings.defaultScreenHeight = 1440;

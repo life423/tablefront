@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Tablefront
 {
-    public enum UnitKind { Scout, Rifle, Tank }
+    public enum UnitKind { Scout, Rifle, Tank, Gunner, Artillery }
 
     [Serializable]
     public sealed class Army
@@ -31,6 +31,7 @@ namespace Tablefront
         public Vector2 Position, Destination;
         public float Health, MaxHealth, Heading, ShotFlash;
         public bool HasOrder;
+        public bool HoldPosition;
         public int AttackTargetId = -1;
         public bool Alive => Health > 0f;
         internal float WeaponTimer;
@@ -80,6 +81,12 @@ namespace Tablefront
         public const float ScoutCaptureWeight = 1.5f;
         public const float RifleCoverDamageMultiplier = .65f;
         public const float TankArmorDamageMultiplier = 1.2f;
+        public const float ArtilleryMinimumRange = 4.5f;
+        public static readonly UnitKind[] UnitKinds = { UnitKind.Scout, UnitKind.Rifle, UnitKind.Tank, UnitKind.Gunner, UnitKind.Artillery };
+
+        public BattlefieldDefinition Battlefield { get; }
+        /// <summary>Current skirmishes enable the five-unit role adapter; old trainers/replays default to the original three.</summary>
+        public bool ExpandedRoster;
 
         public readonly List<Army> Armies = new List<Army>(3);
         public readonly List<Troop> Units = new List<Troop>(80);
@@ -126,6 +133,8 @@ namespace Tablefront
             {
                 case UnitKind.Scout: return new Stats(65f, 4.15f, 4.8f, 6.5f, .58f, .42f);
                 case UnitKind.Tank: return new Stats(330f, 1.95f, 8.2f, 32f, 1.7f, .86f);
+                case UnitKind.Gunner: return new Stats(145f, 2.45f, 5.8f, 9f, .32f, .52f);
+                case UnitKind.Artillery: return new Stats(125f, 1.5f, 12.2f, 40f, 2.5f, .75f);
                 default: return new Stats(115f, 2.85f, 6.4f, 11.5f, .82f, .48f);
             }
         }
@@ -136,28 +145,46 @@ namespace Tablefront
             {
                 case UnitKind.Scout: return 55;
                 case UnitKind.Tank: return 170;
+                case UnitKind.Gunner: return 115;
+                case UnitKind.Artillery: return 190;
                 default: return 85;
             }
         }
 
-        public BattleSimulation(bool spectator, int seed = 42)
+        public static float WeaponRange(UnitKind kind) => Specifications(kind).Range;
+        public static float MinimumWeaponRange(UnitKind kind) => kind == UnitKind.Artillery ? ArtilleryMinimumRange : 0f;
+
+        public static string UnitName(UnitKind kind, bool plural = false)
         {
+            switch (kind)
+            {
+                case UnitKind.Scout: return plural ? "Scouts" : "Scout";
+                case UnitKind.Rifle: return plural ? "Rifles" : "Rifle";
+                case UnitKind.Tank: return plural ? "Tanks" : "Tank";
+                case UnitKind.Gunner: return plural ? "Gunners" : "Gunner";
+                case UnitKind.Artillery: return "Artillery";
+                default: return "Unit";
+            }
+        }
+
+        public BattleSimulation(bool spectator, int seed = 42, BattlefieldId battlefield = BattlefieldId.Greenfield)
+        {
+            Battlefield = TablefrontBattlefields.Get(battlefield);
             random = new System.Random(seed);
             for (int i = 0; i < 3; i++) policyRandom[i] = new System.Random(unchecked(seed * 7919 + i * 104729));
-            Armies.Add(NewArmy(0, "COBALT", new Vector2(0f, -21f), spectator));
-            Armies.Add(NewArmy(1, "EMBER", new Vector2(18.2f, 10.5f), true));
-            Armies.Add(NewArmy(2, "VIOLET", new Vector2(-18.2f, 10.5f), true));
-            Points.Add(new ControlPoint { Id = 0, Name = "WEST", Position = new Vector2(-10f, -6f) });
-            Points.Add(new ControlPoint { Id = 1, Name = "EAST", Position = new Vector2(10f, -6f) });
-            Points.Add(new ControlPoint { Id = 2, Name = "NORTH", Position = new Vector2(0f, 12f) });
+            Armies.Add(NewArmy(0, "COBALT", Battlefield.BasePositions[0], spectator));
+            Armies.Add(NewArmy(1, "EMBER", Battlefield.BasePositions[1], true));
+            Armies.Add(NewArmy(2, "VIOLET", Battlefield.BasePositions[2], true));
+            for (int i = 0; i < 3; i++)
+                Points.Add(new ControlPoint { Id = i, Name = Battlefield.PointNames[i], Position = Battlefield.PointPositions[i] });
             // Cover is low, passable terrain, not a pathfinding obstacle. Its flanking
             // positions overlap the outside of each capture ring rather than its centre.
             foreach (var point in Points)
             {
                 var radial = point.Position.normalized;
                 var flank = new Vector2(-radial.y, radial.x);
-                CoverZones.Add(new CoverZone { Name = point.Name + " left cover", Position = point.Position - flank * 4f, Radius = 2.2f });
-                CoverZones.Add(new CoverZone { Name = point.Name + " right cover", Position = point.Position + flank * 4f, Radius = 2.2f });
+                CoverZones.Add(new CoverZone { Name = point.Name + " left cover", Position = point.Position - flank * Battlefield.CoverOffset, Radius = Battlefield.CoverRadius });
+                CoverZones.Add(new CoverZone { Name = point.Name + " right cover", Position = point.Position + flank * Battlefield.CoverOffset, Radius = Battlefield.CoverRadius });
             }
             foreach (Army army in Armies)
             {
@@ -216,18 +243,20 @@ namespace Tablefront
             {
                 case UnitKind.Scout: return "Fast flanker / quicker capture";
                 case UnitKind.Tank: return "Heavy gun / anti-armour / splash";
+                case UnitKind.Gunner: return "Sustained anti-infantry fire / weak against tanks";
+                case UnitKind.Artillery: return "Long-range splash / cannot fire within 4.5m";
                 default: return "Line infantry / protected in cover";
             }
         }
 
         public bool Recruit(int team, UnitKind kind)
         {
-            if (Finished || team < 0 || team >= Armies.Count || (int)kind < 0 || (int)kind > 2) return false;
+            if (Finished || team < 0 || team >= Armies.Count || (int)kind < 0 || (int)kind >= UnitKinds.Length) return false;
             Army army = Armies[team];
             int cost = Cost(kind);
             if (!army.Alive || army.RecruitCooldown > 0f || army.Credits + .001f < cost || UnitCount(team) >= UnitCap) return false;
             army.Credits -= cost;
-            army.RecruitCooldown = kind == UnitKind.Tank ? 3.5f : 2f;
+            army.RecruitCooldown = kind == UnitKind.Artillery ? 4f : kind == UnitKind.Tank ? 3.5f : 2f;
             Spawn(army, kind);
             army.ReinforcementsDeployed++;
             return true;
@@ -235,7 +264,7 @@ namespace Tablefront
 
         /// <summary>
         /// Strategic policy action. 0..2: send army to point; 3/4: attack cyclic enemy HQ;
-        /// 5: defend own HQ; 6..8: paid Scout/Rifle/Tank recruit; 9: hold current orders.
+        /// 5: defend own HQ; 6..8: paid reconnaissance/infantry/armour recruit; 9: keep current orders.
         /// This is an action vocabulary, not a rule-based choice of what the commander should do.
         /// </summary>
         public void ApplyAction(int team, int action)
@@ -244,7 +273,7 @@ namespace Tablefront
             Army army = Armies[team];
             if (action >= 6 && action <= 8)
             {
-                UnitKind kind = (UnitKind)(action - 6);
+                UnitKind kind = ReinforcementForAction(team, action);
                 bool recruited = Recruit(team, kind);
                 army.Intent = recruited ? "Deploying " + kind.ToString().ToLowerInvariant() : "Saving for " + kind.ToString().ToLowerInvariant();
                 return;
@@ -277,9 +306,30 @@ namespace Tablefront
             }
         }
 
+        UnitKind ReinforcementForAction(int team, int action)
+        {
+            UnitKind original = (UnitKind)(action - 6);
+            if (!ExpandedRoster || PracticeMode) return original;
+            int rifles = 0, gunners = 0, tanks = 0, artillery = 0;
+            foreach (var unit in Units)
+            {
+                if (!unit.Alive || unit.Team != team) continue;
+                if (unit.Kind == UnitKind.Rifle) rifles++;
+                else if (unit.Kind == UnitKind.Gunner) gunners++;
+                else if (unit.Kind == UnitKind.Tank) tanks++;
+                else if (unit.Kind == UnitKind.Artillery) artillery++;
+            }
+            // The frozen policy chooses the strategic recruitment role. This explicit,
+            // deterministic adapter supplies new units without pretending it learned them.
+            if (action == 7 && rifles >= 2 && gunners * 2 < rifles) return UnitKind.Gunner;
+            if (action == 8 && tanks >= 1 && artillery * 2 < tanks) return UnitKind.Artillery;
+            return original;
+        }
+
         /// <summary>
         /// Fixed normalized features shared by training and inference:
-        /// 0..7 own HQ health, credits, score, total/scout/rifle/tank counts, recruit-ready;
+        /// 0..7 own HQ health, credits, score, total/scout/infantry/heavy counts, recruit-ready;
+        /// expanded Gunners aggregate into infantry and Artillery into heavy, without adding features;
         /// 8..11 first cyclic enemy HQ health/score/count/credits; 12..15 second enemy;
         /// 16..36 seven per point: self/enemy1/enemy2 owner flags, signed capture progress,
         /// nearby friendly/enemy strength counts, nearest friendly distance;
@@ -301,7 +351,7 @@ namespace Tablefront
                 {
                     count++; centroid += unit.Position;
                     if (unit.Kind == UnitKind.Scout) scouts++;
-                    else if (unit.Kind == UnitKind.Rifle) rifles++;
+                    else if (unit.Kind == UnitKind.Rifle || unit.Kind == UnitKind.Gunner) rifles++;
                     else tanks++;
                 }
                 else if ((unit.Position - army.BasePosition).sqrMagnitude < 121f) intruders++;
@@ -390,6 +440,7 @@ namespace Tablefront
                 unit.Destination = Bound(target + offset);
                 unit.HasOrder = true;
                 unit.AttackMove = attackMove;
+                unit.HoldPosition = false;
                 unit.AttackTargetId = -1;
                 unit.BaseTargetTeam = -1;
             }
@@ -407,8 +458,23 @@ namespace Tablefront
                 unit.AttackTargetId = targetId;
                 unit.HasOrder = true;
                 unit.AttackMove = true;
+                unit.HoldPosition = false;
                 unit.BaseTargetTeam = -1;
                 unit.Destination = target.Position;
+            }
+        }
+
+        public void OrderStop(IEnumerable<int> ids, bool hold = false)
+        {
+            if (Finished || ids == null) return;
+            foreach (int id in ids)
+            {
+                Troop unit = FindUnit(id);
+                if (unit == null || !unit.Alive) continue;
+                unit.Destination = unit.Position;
+                unit.HasOrder = false; unit.HoldPosition = hold;
+                unit.AttackTargetId = unit.BaseTargetTeam = -1;
+                unit.AttackMove = true;
             }
         }
 
@@ -469,6 +535,7 @@ namespace Tablefront
         void UpdateUnit(Troop unit, float dt)
         {
             Stats stats = Specifications(unit.Kind);
+            float minimumRange = MinimumWeaponRange(unit.Kind);
             unit.ShotFlash = Mathf.Max(0f, unit.ShotFlash - dt * 5f);
             unit.WeaponTimer = Mathf.Max(0f, unit.WeaponTimer - dt);
             Army home = Armies[unit.Team];
@@ -485,7 +552,8 @@ namespace Tablefront
                 else unit.Destination = target.Position;
             }
             if (target == null && (unit.AttackMove || !unit.HasOrder))
-                target = NearestEnemy(unit.Position, unit.Team, stats.Range + (unit.HasOrder ? 1.7f : 2.5f));
+                target = NearestEnemy(unit.Position, unit.Team,
+                    stats.Range + (unit.HoldPosition ? 0f : unit.HasOrder ? 1.7f : 2.5f), minimumRange);
 
             Vector2 movementTarget = unit.Destination;
             bool move = unit.HasOrder;
@@ -494,7 +562,16 @@ namespace Tablefront
             {
                 float distance = Vector2.Distance(unit.Position, target.Position);
                 Face(unit, target.Position - unit.Position, dt);
-                if (distance <= stats.Range)
+                if (distance < minimumRange)
+                {
+                    // Explicit artillery focus orders seek firing distance, but a hold
+                    // order never retreats or pursues. Scouts can close the firing gap.
+                    move = !unit.HoldPosition && unit.AttackTargetId >= 0;
+                    Vector2 away = unit.Position - target.Position;
+                    if (away.sqrMagnitude < .001f) away = Vector2.up;
+                    movementTarget = unit.Position + away.normalized * (minimumRange + .75f - distance);
+                }
+                else if (distance <= stats.Range)
                 {
                     move = false;
                     firedOrAiming = true;
@@ -504,7 +581,7 @@ namespace Tablefront
                         unit.WeaponTimer = stats.Delay;
                     }
                 }
-                else if (unit.AttackMove || unit.AttackTargetId >= 0)
+                else if (!unit.HoldPosition && (unit.AttackMove || unit.AttackTargetId >= 0))
                 { movementTarget = target.Position; move = true; }
             }
 
@@ -525,7 +602,14 @@ namespace Tablefront
                 if (targetBase != null)
                 {
                     float distance = Vector2.Distance(unit.Position, targetBase.BasePosition);
-                    if (distance <= stats.Range + 1.25f)
+                    if (distance < minimumRange)
+                    {
+                        move = !unit.HoldPosition;
+                        Vector2 away = unit.Position - targetBase.BasePosition;
+                        if (away.sqrMagnitude < .001f) away = Vector2.up;
+                        movementTarget = unit.Position + away.normalized * (minimumRange + .75f - distance);
+                    }
+                    else if (distance <= stats.Range + 1.25f)
                     {
                         move = false;
                         firedOrAiming = true;
@@ -536,12 +620,12 @@ namespace Tablefront
                             unit.WeaponTimer = stats.Delay;
                         }
                     }
-                    else { movementTarget = targetBase.BasePosition; move = true; }
+                    else if (!unit.HoldPosition) { movementTarget = targetBase.BasePosition; move = true; }
                 }
             }
 
             Vector2 steering = Vector2.zero;
-            if (move)
+            if (move && !unit.HoldPosition)
             {
                 Vector2 delta = movementTarget - unit.Position;
                 float distance = delta.magnitude;
@@ -584,7 +668,7 @@ namespace Tablefront
         {
             if (direction.sqrMagnitude < .001f) return;
             float targetAngle = Mathf.Atan2(direction.x, direction.y) * Mathf.Rad2Deg;
-            unit.Heading = Mathf.MoveTowardsAngle(unit.Heading, targetAngle, dt * (unit.Kind == UnitKind.Tank ? 110f : 360f));
+            unit.Heading = Mathf.MoveTowardsAngle(unit.Heading, targetAngle, dt * (unit.Kind == UnitKind.Artillery ? 85f : unit.Kind == UnitKind.Tank ? 110f : 360f));
         }
 
         void QueueShot(Troop unit, int target, int baseTeam, Vector2 to, float damage)
@@ -593,7 +677,7 @@ namespace Tablefront
             pendingHits.Add(new Hit
             {
                 TargetId = target, BaseTeam = baseTeam, AttackerTeam = unit.Team, ShooterId = unit.Id, WeaponKind = unit.Kind,
-                Damage = damage, From = unit.Position, To = to, Heavy = unit.Kind == UnitKind.Tank
+                Damage = damage, From = unit.Position, To = to, Heavy = unit.Kind == UnitKind.Tank || unit.Kind == UnitKind.Artillery
             });
         }
 
@@ -622,7 +706,8 @@ namespace Tablefront
                     if (PracticeMode) continue;
                     Army army = Armies[hit.BaseTeam];
                     if (!army.Alive) continue;
-                    army.BaseHealth = Mathf.Max(0f, army.BaseHealth - hit.Damage);
+                    float baseDamage = hit.WeaponKind == UnitKind.Gunner ? hit.Damage * .35f : hit.Damage;
+                    army.BaseHealth = Mathf.Max(0f, army.BaseHealth - baseDamage);
                     army.SinceDamage = 0f;
                     killed = !army.Alive;
                     if (killed)
@@ -637,16 +722,18 @@ namespace Tablefront
                     if (target == null || !target.Alive) continue;
                     killed = DamageTroop(target, hit.Damage, hit);
                     if (killed) Armies[hit.AttackerTeam].Credits = Mathf.Min(999f, Armies[hit.AttackerTeam].Credits + 9f);
-                    // Tank shells damage nearby opponents only. There is no hidden friendly immunity difference by controller.
+                    // Heavy shells damage nearby opponents only; all controllers share this rule.
                     if (hit.Heavy)
                     {
+                        float splashRadius = hit.WeaponKind == UnitKind.Artillery ? 3.1f : 1.65f;
+                        float splashStrength = hit.WeaponKind == UnitKind.Artillery ? .6f : .22f;
                         for (int u = 0; u < Units.Count; u++)
                         {
                             Troop splash = Units[u];
                             if (!splash.Alive || splash.Id == hit.TargetId || splash.Team == hit.AttackerTeam) continue;
                             float distance = Vector2.Distance(splash.Position, hit.To);
-                            if (distance < 1.65f)
-                                killed |= DamageTroop(splash, hit.Damage * .22f * (1f - distance / 1.65f), hit);
+                            if (distance < splashRadius)
+                                killed |= DamageTroop(splash, hit.Damage * splashStrength * (1f - distance / splashRadius), hit);
                         }
                     }
                 }
@@ -661,6 +748,8 @@ namespace Tablefront
             // Only actual tank units receive the anti-armour bonus; the HQ gun does not.
             if (hit.ShooterId > 0 && hit.WeaponKind == UnitKind.Tank && target.Kind == UnitKind.Tank)
                 damage *= TankArmorDamageMultiplier;
+            if (hit.WeaponKind == UnitKind.Gunner)
+                damage *= target.Kind == UnitKind.Tank ? .35f : target.Kind == UnitKind.Artillery ? .75f : 1.25f;
             target.Health = Mathf.Max(0f, target.Health - damage);
             if (target.Alive) return false;
             Armies[target.Team].UnitsLost++;
@@ -769,7 +858,7 @@ namespace Tablefront
             return null;
         }
 
-        Troop NearestEnemy(Vector2 position, int team, float radius)
+        Troop NearestEnemy(Vector2 position, int team, float radius, float minimumRadius = 0f)
         {
             Troop best = null;
             float distance = radius * radius;
@@ -778,7 +867,7 @@ namespace Tablefront
                 Troop unit = Units[i];
                 if (!unit.Alive || unit.Team == team) continue;
                 float candidate = (unit.Position - position).sqrMagnitude;
-                if (candidate < distance) { best = unit; distance = candidate; }
+                if (candidate >= minimumRadius * minimumRadius && candidate < distance) { best = unit; distance = candidate; }
             }
             return best;
         }

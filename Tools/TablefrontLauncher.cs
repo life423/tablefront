@@ -37,7 +37,7 @@ internal static class TablefrontLauncher
     [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr window);
 
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
         string directory = AppDomain.CurrentDomain.BaseDirectory;
         string game = Path.Combine(directory, "Tablefront.exe");
@@ -69,7 +69,10 @@ internal static class TablefrontLauncher
             startup.Flags = 0x1000 | 0x0001; // STARTF_TITLEISAPPID | STARTF_USESHOWWINDOW.
             startup.ShowWindow = 1;
             ProcessInfo child;
-            if (!CreateProcessW(game, new StringBuilder("\"" + game + "\""), IntPtr.Zero,
+            // The opt-in local benchmark uses the same startup path as the desktop icon.
+            // Do not forward arbitrary shell or Unity arguments through a shortcut.
+            string benchmark = Array.IndexOf(args, "-tablefront-benchmark") >= 0 ? " -tablefront-benchmark" : "";
+            if (!CreateProcessW(game, new StringBuilder("\"" + game + "\"" + benchmark), IntPtr.Zero,
                 IntPtr.Zero, false, 0, IntPtr.Zero, directory, ref startup, out child))
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             CloseHandle(child.Thread); CloseHandle(child.Process);

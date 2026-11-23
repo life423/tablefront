@@ -205,8 +205,7 @@ public static class VerifyControlsTutorial
             }
             AdvanceUntil(() => game.Sim.Armies[0].RecruitCooldown <= 0, 5);
             game.HUD.Refresh();
-            var recruitButton = game.HUD.GetComponentsInChildren<Button>().First(b =>
-                b.GetComponentInChildren<TextMeshProUGUI>() != null && b.GetComponentInChildren<TextMeshProUGUI>().text.StartsWith("Recruit Rifles"));
+            var recruitButton = game.HUD.GetComponentsInChildren<Button>().First(b => b.name == "Recruit Rifles");
             int beforeRecruitButton = game.Sim.UnitCount(0);
             Check(recruitButton.interactable, "Visible rifle recruitment action is enabled when affordable and ready");
             recruitButton.onClick.Invoke();

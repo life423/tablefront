@@ -65,8 +65,79 @@ namespace Tablefront
             var rig = new Rig { Seed = unitId };
             if (kind == UnitKind.Tank) Tank(hull, materials, rig);
             else if (kind == UnitKind.Scout) Scout(hull, materials, rig);
+            else if (kind == UnitKind.Artillery) Artillery(hull, materials, rig);
+            else if (kind == UnitKind.Gunner) Gunner(hull, materials, rig);
             else Infantry(hull, materials, rig);
             return rig;
+        }
+
+        void Gunner(Transform parent, Materials m, Rig rig)
+        {
+            // The broad, crew-served weapon and ammunition box make this team read
+            // differently from the two slim, independently armed rifle miniatures.
+            var crew = Group("Heavy weapon crew", parent);
+            crew.localPosition = new Vector3(-.12f, 0, -.27f);
+            Infantry(crew, m, rig);
+            if (rig.Flash != null) UnityEngine.Object.Destroy(rig.Flash);
+            var gun = Group("Crew-served heavy machine gun", parent);
+            Cylinder("Tripod pintle", gun, new Vector3(.12f, .66f, .27f), .065f, .72f, m.Steel);
+            foreach (float side in new[] { -1f, 1f })
+                Link("Deployed support leg", gun, new Vector3(.12f, .64f, .27f), new Vector3(.12f + side * .47f, .19f, .65f), .065f, .065f, m.Dark);
+            Link("Rear support leg", gun, new Vector3(.12f, .64f, .27f), new Vector3(.12f, .19f, -.36f), .065f, .065f, m.Dark);
+            Box("Heavy receiver", gun, new Vector3(.12f, .92f, .38f), new Vector3(.27f, .23f, .61f), .035f, m.Steel);
+            Box("Ivory gun shield", gun, new Vector3(.12f, .92f, .61f), new Vector3(.64f, .40f, .07f), .045f, m.Paint);
+            Box("Shield recognition band", gun, new Vector3(.12f, 1.07f, .655f), new Vector3(.43f, .055f, .018f), .005f, m.Ivory);
+            var barrel = Cylinder("Long finned heavy barrel", gun, new Vector3(.12f, .94f, .97f), .052f, .78f, m.Dark);
+            barrel.localEulerAngles = new Vector3(90, 0, 0);
+            for (int i = 0; i < 5; i++)
+            {
+                var fin = Cylinder("Cooling collar", gun, new Vector3(.12f, .94f, .73f + i * .085f), .072f, .035f, m.Steel);
+                fin.localEulerAngles = new Vector3(90, 0, 0);
+            }
+            Box("Feed ammunition box", gun, new Vector3(-.23f, .82f, .33f), new Vector3(.31f, .34f, .34f), .035f, m.Brass);
+            for (int i = 0; i < 5; i++) Box("Brass linked ammunition", gun, new Vector3(-.12f - i * .048f, .98f, .37f), new Vector3(.031f, .055f, .15f), .009f, m.Brass);
+            rig.Flash = Ellipsoid("Heavy gun burst flash", gun, new Vector3(.12f, .94f, 1.43f), new Vector3(.20f, .20f, .35f), m.Flash).gameObject;
+            rig.Flash.SetActive(false);
+            Combine(gun, "gunner-weapon", false);
+        }
+
+        void Artillery(Transform parent, Materials m, Rig rig)
+        {
+            var body = Group("Low artillery carriage", parent);
+            Box("Armored gun carriage", body, new Vector3(0, .49f, -.05f), new Vector3(1.30f, .39f, 1.75f), .15f, m.Paint);
+            Box("Open fighting deck", body, new Vector3(0, .72f, -.18f), new Vector3(.98f, .10f, 1.22f), .04f, m.Dark);
+            foreach (float side in new[] { -1f, 1f })
+            {
+                Box("Protected artillery track", body, new Vector3(side * .70f, .37f, -.12f), new Vector3(.34f, .43f, 1.95f), .17f, m.Dark);
+                Box("Long track fender", body, new Vector3(side * .70f, .62f, -.12f), new Vector3(.40f, .065f, 1.94f), .025f, m.Paint);
+                Box("Trail stabilizer", body, new Vector3(side * .48f, .31f, -1.06f), new Vector3(.16f, .14f, .57f), .025f, m.Steel);
+                Box("Ivory artillery identity stripe", body, new Vector3(side * .70f, .665f, -.25f), new Vector3(.09f, .02f, 1.1f), .004f, m.Ivory);
+                Box("Upright gun mounting cheek", body, new Vector3(side * .37f, 1.02f, .07f), new Vector3(.17f, .61f, .54f), .055f, m.Paint);
+            }
+            Cylinder("Exposed turntable", body, new Vector3(0, .81f, .03f), .43f, .16f, m.Brass);
+            var wheels = new List<Transform>();
+            foreach (float side in new[] { -1f, 1f }) for (int i = 0; i < 5; i++)
+            {
+                var wheel = Group("Artillery road wheel", parent); wheel.localPosition = new Vector3(side * .872f, .33f, -.82f + i * .35f);
+                var tire = Cylinder("Road wheel rubber", wheel, Vector3.zero, .17f, .045f, m.Dark); tire.localEulerAngles = new Vector3(0, 0, 90);
+                var hub = Cylinder("Recessed artillery hub", wheel, new Vector3(side * .03f, 0, 0), .11f, .018f, m.Steel); hub.localEulerAngles = new Vector3(0, 0, 90);
+                Box("Hub radial", wheel, new Vector3(side * .045f, 0, 0), new Vector3(.014f, .14f, .024f), .006f, m.Brass);
+                Combine(wheel, "artillery-wheel-" + side, true); wheels.Add(wheel);
+            }
+            rig.Wheels = wheels.ToArray();
+            rig.Barrel = Group("Recoiling elevated artillery", parent);
+            var elevated = Group("Elevated gun axis", rig.Barrel); elevated.localPosition = new Vector3(0, 1.14f, .03f); elevated.localRotation = Quaternion.Euler(-20, 0, 0);
+            Box("Breech block", elevated, new Vector3(0, 0, -.24f), new Vector3(.51f, .40f, .72f), .075f, m.Paint);
+            var barrelTube = Cylinder("Long artillery tube", elevated, new Vector3(0, 0, .87f), .085f, 1.90f, m.Steel); barrelTube.localEulerAngles = new Vector3(90, 0, 0);
+            var sleeve = Cylinder("Artillery recoil sleeve", elevated, new Vector3(0, 0, .28f), .145f, .73f, m.Paint); sleeve.localEulerAngles = new Vector3(90, 0, 0);
+            Box("Double baffle muzzle brake", elevated, new Vector3(0, 0, 1.86f), new Vector3(.31f, .25f, .30f), .035f, m.Dark);
+            Box("Muzzle brass edge", elevated, new Vector3(0, .115f, 1.86f), new Vector3(.29f, .028f, .29f), .005f, m.Brass);
+            foreach (float side in new[] { -1f, 1f })
+                Link("Hydraulic elevation strut", rig.Barrel, new Vector3(side * .28f, .80f, -.34f), new Vector3(side * .24f, 1.27f, .37f), .075f, .075f, m.Steel);
+            rig.Flash = Ellipsoid("Artillery discharge", elevated, new Vector3(0, 0, 2.10f), new Vector3(.40f, .40f, .64f), m.Flash).gameObject;
+            rig.Flash.SetActive(false);
+            Combine(body, "artillery-carriage", true);
+            Combine(elevated, "artillery-elevated-gun", false);
         }
 
         void Tank(Transform parent, Materials m, Rig rig)

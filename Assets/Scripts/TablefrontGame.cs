@@ -17,6 +17,8 @@ namespace Tablefront
         public bool Spectator { get; private set; }
         public bool HelpOpen { get; private set; }
         public int Speed { get; private set; } = 1;
+        public BattlefieldId SelectedBattlefield { get; private set; } = BattlefieldId.Greenfield;
+        public bool AttackMoveArmed { get; private set; }
         public string Notice => Time.unscaledTime < noticeUntil ? notice : "";
         public Camera ViewCamera { get; private set; }
         public TablefrontHUD HUD { get; private set; }
@@ -44,7 +46,7 @@ namespace Tablefront
         }
         public float TutorialTargetRadius => TutorialStep == 0 ? 2.8f : TutorialStep == 2 ? BattleSimulation.CaptureRadius : TutorialStep == 4 ? 1.1f : TutorialStep == 5 ? Sim.CoverZones[0].Radius : 1.8f;
         public string TutorialTargetLabel => new[] { "YOUR TROOPS", "MOVE HERE", "CAPTURE WEST", "YOUR HQ", "PRACTICE TARGET", "RIFLE COVER", "" }[Mathf.Clamp(TutorialStep, 0, 6)];
-        public string CommandHint => Selected.Count == 0 ? "Click your troops or choose a force below" : "Click ground to move  ·  Click an enemy to attack";
+        public string CommandHint => Selected.Count == 0 ? "Click your troops or choose a force below" : AttackMoveArmed ? "Click a destination to advance and engage · Esc cancels" : "Click ground to move · Click an enemy to attack";
         public string TutorialInstruction
         {
             get
@@ -67,6 +69,7 @@ namespace Tablefront
             {
                 var units = Sim.Units.Where(u => u.Alive && Selected.Contains(u.Id)).ToArray();
                 if (units.Length == 0) return "Choose a force to give orders";
+                if (units.All(u => u.HoldPosition)) return "Holding position · fire at enemies in range";
                 int moving = units.Count(u => u.HasOrder && Vector2.Distance(u.Position, u.Destination) > 1.2f);
                 if (units.Any(u => u.AttackTargetId >= 0)) return "Focus fire · enemy unit";
                 if (moving == 0) return "Holding ground · attacks nearby enemies";
@@ -86,8 +89,8 @@ namespace Tablefront
                 if (units.Length == 0) return "Scouts capture · Rifles use cover · Tanks break armor";
                 int protectedCount = units.Count(u => Sim.IsProtected(u));
                 var kinds = units.Select(u => u.Kind).Distinct().ToArray();
-                string role = kinds.Length == 1 ? kinds[0] == UnitKind.Scout ? "Fast objective capture" : kinds[0] == UnitKind.Rifle ? "Hold cover · 35% less incoming damage" : "Break armor · 20% more damage to tanks" : "Scouts capture · Rifles hold cover · Tanks break armor";
-                return role + (protectedCount > 0 ? "\n" + protectedCount + " rifle units protected by cover" : "");
+                string role = kinds.Length == 1 ? BattleSimulation.RoleDescription(kinds[0]) : "Scouts capture · Rifles hold cover · Support units need escorts";
+                return role + (protectedCount > 0 ? "\n" + protectedCount + (protectedCount == 1 ? " rifle unit protected by cover" : " rifle units protected by cover") : "");
             }
         }
         public string BattleRecap
@@ -123,7 +126,7 @@ namespace Tablefront
                 if (Spectator) return "SPECTATOR  /  Three AI commanders";
                 var troops = Sim.Units.Where(u => u.Alive && Selected.Contains(u.Id)).ToArray();
                 if (troops.Length == 0) return "No units selected";
-                return troops.Length + " selected  /  " + string.Join("  ", troops.GroupBy(u => u.Kind).Select(g => g.Count() + " " + g.Key));
+                return troops.Length + " selected / " + string.Join(" · ", troops.GroupBy(u => u.Kind).Select(g => g.Count() + " " + BattleSimulation.UnitName(g.Key, g.Count() != 1)));
             }
         }
 
@@ -137,6 +140,8 @@ namespace Tablefront
         float masterVolume = .65f;
         Vector2 pressPosition;
         int matchIndex;
+        int lastClickedUnit = -1;
+        float lastUnitClickTime = -10;
         public const int ControlGroupCount = 10;
         readonly HashSet<int>[] groups = Enumerable.Range(0, ControlGroupCount).Select(_ => new HashSet<int>()).ToArray();
         int lastGroupSlot = -1;
@@ -169,6 +174,7 @@ namespace Tablefront
             Cursor.visible = true;
             masterVolume = PlayerPrefs.GetFloat("Tablefront.Volume", .65f);
             reducedMotion = PlayerPrefs.GetInt("Tablefront.ReducedMotion", 0) != 0;
+            SelectedBattlefield = TablefrontBattlefields.Get((BattlefieldId)PlayerPrefs.GetInt("Tablefront.Battlefield", 0)).Id;
             AudioListener.volume = masterVolume;
             var camObject = new GameObject("Tabletop lens", typeof(Camera), typeof(AudioListener), typeof(CinemachineBrain));
             ViewCamera = camObject.GetComponent<Camera>();
@@ -185,7 +191,8 @@ namespace Tablefront
             UpdateCamera(1, true);
             World = new GameObject("Miniature battlefield").AddComponent<TablefrontWorld>();
             World.Build(ViewCamera);
-            Sim = new BattleSimulation(false);
+            Sim = new BattleSimulation(false, 42, SelectedBattlefield);
+            World.SetBattlefield(Sim);
             World.Render(Sim, Selected);
             HUD = new GameObject("Tablefront interface").AddComponent<TablefrontHUD>();
             HUD.Build(this, ViewCamera);
@@ -216,6 +223,8 @@ namespace Tablefront
                 Spectator = true; Selected.Clear(); Notify("Your HQ fell. Watching the remaining armies; Escape opens the menu.");
             }
             World.ReducedMotion = ReducedMotion;
+            World.HoveredUnitId = !InMenu && !Paused && !HelpOpen && Mouse.current != null && !HUD.PointerOverUI
+                ? NearestUnitAt(Mouse.current.position.ReadValue(), 27) : -1;
             World.SetTutorialTarget(TutorialTargetPosition, TutorialTargetRadius, TutorialTargetLabel,
                 TutorialActive && TutorialStep < 6 && !Paused && !HelpOpen && !InMenu);
             World.Render(Sim, Selected);
@@ -226,25 +235,31 @@ namespace Tablefront
 
         public void StartBattle(bool spectator)
         {
+            StartBattleOn(spectator, SelectedBattlefield);
+        }
+        void StartBattleOn(bool spectator, BattlefieldId battlefield)
+        {
             World.ClearBattle();
-            Sim = new BattleSimulation(spectator, 42 + matchIndex++);
+            Sim = new BattleSimulation(spectator, 42 + matchIndex++, battlefield) { ExpandedRoster = true };
+            World.SetBattlefield(Sim);
             startedAsSpectator = spectator; TutorialActive = false; TutorialStep = 0;
             ResetBattleTracking();
             Spectator = spectator; InMenu = false; Paused = false; HelpOpen = false;
             Speed = 1; accumulator = 0; Selected.Clear(); CancelPointerGesture();
             tutorialEnemyId = -1; tutorialMovingUnits.Clear(); tutorialFeedbackUntil = 0;
             // Keep NORTH and the complete player HQ between the header and command deck.
-            wantedFocus = new Vector3(0, 0, -12);
-            wantedDistance = 68; wantedYaw = 0;
+            bool northernHQ = battlefield == BattlefieldId.RiverCrossing;
+            wantedFocus = new Vector3(0, 0, northernHQ ? -7 : -12);
+            wantedDistance = northernHQ ? 74 : 68; wantedYaw = 0;
             if (!spectator) foreach (var u in Sim.Units.Where(u => u.Team == 0 && u.Alive)) Selected.Add(u.Id);
             Notify(spectator ? "Three commanders. One battlefield." : "Choose a force below, then click a beacon to move.");
             World.Render(Sim, Selected); HUD.Refresh();
         }
         public void StartTutorial()
         {
-            StartBattle(false);
+            StartBattleOn(false, BattlefieldId.Greenfield);
             TutorialActive = true; TutorialStep = 0;
-            Sim.PracticeMode = true;
+            Sim.PracticeMode = true; Sim.ExpandedRoster = false;
             tutorialMoveIssued = tutorialRecruited = tutorialCoverIssued = false;
             tutorialEnemyId = -1; tutorialEnemy = null; tutorialMovingUnits.Clear(); tutorialFeedbackUntil = 0;
             foreach (var army in Sim.Armies) { army.IsAI = false; army.TurretTimer = 99999; }
@@ -256,6 +271,22 @@ namespace Tablefront
             HUD.Refresh();
         }
         public void Rematch() { if (TutorialActive) StartTutorial(); else StartBattle(startedAsSpectator); }
+        public void SetBattlefield(BattlefieldId battlefield)
+        {
+            if (!InMenu) return;
+            SelectedBattlefield = TablefrontBattlefields.Get(battlefield).Id;
+            PlayerPrefs.SetInt("Tablefront.Battlefield", (int)SelectedBattlefield);
+            World.ClearBattle();
+            Sim = new BattleSimulation(false, 42, SelectedBattlefield);
+            World.SetBattlefield(Sim); World.Render(Sim, Selected); HUD.Refresh();
+        }
+        public void NextBattlefield()
+        {
+            if (!Sim.Finished || TutorialActive) return;
+            SelectedBattlefield = TablefrontBattlefields.All[((int)Sim.Battlefield.Id + 1) % TablefrontBattlefields.All.Length].Id;
+            PlayerPrefs.SetInt("Tablefront.Battlefield", (int)SelectedBattlefield);
+            StartBattle(startedAsSpectator);
+        }
         public void SkipTutorial() { if (TutorialActive) ReturnToMenu(); }
         public void CompleteTutorial()
         {
@@ -439,12 +470,13 @@ namespace Tablefront
             navigatingUI = false;
             if (UnityEngine.EventSystems.EventSystem.current != null) UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
         }
-        public bool IssueOrder(Vector2 location, int targetId = -1)
+        public bool IssueOrder(Vector2 location, int targetId = -1, bool attackMove = false)
         {
             if (!CanCommand || Selected.Count == 0 || float.IsNaN(location.x) || float.IsNaN(location.y) || float.IsInfinity(location.x) || float.IsInfinity(location.y)) return false;
             if (targetId >= 0 && !Sim.Units.Any(u => u.Id == targetId && u.Alive && u.Team != 0)) return false;
             location = new Vector2(Mathf.Clamp(location.x, -24, 24), Mathf.Clamp(location.y, -24, 24));
-            if (targetId >= 0) Sim.OrderAttack(Selected, targetId); else Sim.OrderMove(Selected, location);
+            if (targetId >= 0) Sim.OrderAttack(Selected, targetId); else Sim.OrderMove(Selected, location, attackMove);
+            AttackMoveArmed = false; lastClickedUnit = -1;
             World.ShowOrder(location);
             if (TutorialActive)
             {
@@ -453,20 +485,37 @@ namespace Tablefront
                 if (TutorialStep == 5 && targetId < 0 && Vector2.Distance(location, Sim.CoverZones[0].Position) <= Sim.CoverZones[0].Radius &&
                     Sim.Units.Any(u => u.Alive && u.Kind == UnitKind.Rifle && Selected.Contains(u.Id))) tutorialCoverIssued = true;
             }
-            Notify(targetId >= 0 ? "Focus fire" : "Advance to position");
+            Notify(targetId >= 0 ? "Focus fire" : attackMove ? "Advance and engage" : "Move to position");
             return true;
+        }
+        public void ToggleAttackMove()
+        {
+            if (!CanCommand || Selected.Count == 0) return;
+            ReleaseUIFocus();
+            AttackMoveArmed = !AttackMoveArmed;
+            Notify(AttackMoveArmed ? "Choose an attack-move destination" : "Attack-move cancelled");
+        }
+        public void StopSelected()
+        {
+            if (!CanCommand || Selected.Count == 0) return;
+            ReleaseUIFocus(); Sim.OrderStop(Selected); CancelPointerGesture(); Notify("Selected troops stopped");
+        }
+        public void HoldSelected()
+        {
+            if (!CanCommand || Selected.Count == 0) return;
+            ReleaseUIFocus(); Sim.OrderStop(Selected, true); CancelPointerGesture(); Notify("Hold position · fire without pursuing");
         }
         static string FormatTime(float seconds) => ((int)seconds / 60).ToString("00") + ":" + ((int)seconds % 60).ToString("00");
         public void ReturnToMenu()
         {
             InMenu = true; HelpOpen = false; Paused = false; Selected.Clear(); accumulator = 0;
             TutorialActive = false; TutorialStep = 0; alertUntil = 0; CancelPointerGesture();
-            World.ClearBattle(); Sim = new BattleSimulation(false);
+            World.ClearBattle(); Sim = new BattleSimulation(false, 42, SelectedBattlefield); World.SetBattlefield(Sim);
             ResetBattleTracking();
             wantedFocus = new Vector3(0, 0, -2); wantedDistance = 64; wantedYaw = 0;
             HUD.Refresh();
         }
-        void CancelPointerGesture() { dragging = pressStartedInWorld = false; ResetGroupTap(); if (HUD) HUD.DrawSelection(default, default, false); }
+        void CancelPointerGesture() { dragging = pressStartedInWorld = AttackMoveArmed = false; lastClickedUnit = -1; ResetGroupTap(); if (HUD) HUD.DrawSelection(default, default, false); }
         public void TogglePause() { if (InMenu || Sim.Finished) return; Paused = !Paused; CancelPointerGesture(); }
         public void ToggleHelp() { HelpOpen = !HelpOpen; CancelPointerGesture(); }
         public void CycleSpeed() { Speed = Speed == 1 ? 2 : 1; }
@@ -481,12 +530,13 @@ namespace Tablefront
                 if (TutorialActive && TutorialStep == 3 && kind == UnitKind.Rifle) tutorialRecruited = true;
                 World.PlayRecruitCue();
             }
-            Notify(added ? kind + " deployed at your HQ" : Sim.UnitCount(0) >= BattleSimulation.UnitCap ? "Army at capacity" : Sim.Armies[0].RecruitCooldown > 0 ? "Reinforcements preparing" : "Need " + BattleSimulation.Cost(kind) + " supplies");
+            Notify(added ? BattleSimulation.UnitName(kind) + " deployed at your HQ" : Sim.UnitCount(0) >= BattleSimulation.UnitCap ? "Army at capacity" : Sim.Armies[0].RecruitCooldown > 0 ? "Reinforcements preparing" : "Need " + BattleSimulation.Cost(kind) + " credits");
         }
         public void SelectAll()
         {
             if (!CanCommand) return;
             ReleaseUIFocus();
+            AttackMoveArmed = false;
             Selected.Clear(); foreach (var u in Sim.Units.Where(u => u.Team == 0 && u.Alive)) Selected.Add(u.Id);
             Notify("All " + Selected.Count + " units selected");
         }
@@ -494,6 +544,7 @@ namespace Tablefront
         {
             if (!CanCommand) return;
             ReleaseUIFocus();
+            AttackMoveArmed = false;
             Selected.Clear();
             foreach (var unit in Sim.Units) if (unit.Alive && unit.Team == 0 && unit.Kind == kind) Selected.Add(unit.Id);
             if (Selected.Count == 0) Notify("No " + kind.ToString().ToLowerInvariant() + " units yet. Recruit one at your HQ.");
@@ -523,15 +574,23 @@ namespace Tablefront
             {
                 if (kb.f11Key.wasPressedThisFrame) TablefrontGraphics.ToggleFullscreen();
                 if (kb.tabKey.wasPressedThisFrame) { navigatingUI = true; HUD.FocusNextControl(kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed); }
-                if (kb.escapeKey.wasPressedThisFrame) { if (HelpOpen) ToggleHelp(); else TogglePause(); }
+                if (kb.escapeKey.wasPressedThisFrame) { if (AttackMoveArmed) { AttackMoveArmed = false; Notify("Attack-move cancelled"); } else if (HelpOpen) ToggleHelp(); else TogglePause(); }
                 if (InMenu) return; // EventSystem Submit follows the focused menu button.
                 if (kb.spaceKey.wasPressedThisFrame && !HelpOpen && !HasFocusedUI) TogglePause();
                 if (Paused || HelpOpen || Sim.Finished) return;
                 if (kb.zKey.wasPressedThisFrame) Recruit(UnitKind.Scout);
                 if (kb.xKey.wasPressedThisFrame) Recruit(UnitKind.Rifle);
                 if (kb.cKey.wasPressedThisFrame) Recruit(UnitKind.Tank);
+                if (kb.vKey.wasPressedThisFrame) Recruit(UnitKind.Gunner);
+                if (kb.bKey.wasPressedThisFrame) Recruit(UnitKind.Artillery);
                 bool assigning = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
                 bool adding = kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
+                if (!assigning)
+                {
+                    if (kb.aKey.wasPressedThisFrame) ToggleAttackMove();
+                    if (kb.sKey.wasPressedThisFrame) StopSelected();
+                    if (kb.hKey.wasPressedThisFrame) HoldSelected();
+                }
                 for (int slot = 0; slot < groups.Length; slot++)
                 {
                     var key = (Key)((int)Key.Digit1 + slot);
@@ -544,8 +603,8 @@ namespace Tablefront
                 float dt = Mathf.Min(Time.unscaledDeltaTime, .05f);
                 Vector3 right = Quaternion.Euler(0, wantedYaw, 0) * Vector3.right;
                 Vector3 forward = Quaternion.Euler(0, wantedYaw, 0) * Vector3.forward;
-                float x = (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1 : 0) - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1 : 0);
-                float z = (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1 : 0) - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1 : 0);
+                float x = (kb.rightArrowKey.isPressed ? 1 : 0) - (kb.leftArrowKey.isPressed ? 1 : 0);
+                float z = (kb.upArrowKey.isPressed ? 1 : 0) - (kb.downArrowKey.isPressed ? 1 : 0);
                 bool rotate = kb.eKey.isPressed || kb.qKey.isPressed;
                 if (!navigatingUI && (x != 0 || z != 0 || rotate)) ReleaseUIFocus();
                 if ((!navigatingUI || !HasFocusedUI) && !(kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed)) wantedFocus += (right * x + forward * z) * dt * wantedDistance * .35f;
@@ -595,6 +654,8 @@ namespace Tablefront
         {
             if (!CanCommand) return;
             ReleaseUIFocus();
+            if (AttackMoveArmed && TryGround(screen, out var attackDestination))
+            { IssueOrder(attackDestination, NearestAt(screen, false, 25), true); return; }
             // In a lesson the marked destination is the explicit action target, even if
             // another friendly already stands there. Do not turn that click into a selection.
             if (TutorialActive && Selected.Count > 0 && (TutorialStep == 1 || TutorialStep == 2 || TutorialStep == 5) &&
@@ -613,7 +674,23 @@ namespace Tablefront
                 return ((Vector2)ViewCamera.WorldToScreenPoint(new Vector3(unit.Position.x, .6f, unit.Position.y)) - screen).sqrMagnitude;
             }
             if (friendly >= 0 && (enemy < 0 || DistanceTo(friendly) <= DistanceTo(enemy)))
-            { SelectAt(screen, screen, false, additive); return; }
+            {
+                bool doubleClick = friendly == lastClickedUnit && Time.unscaledTime - lastUnitClickTime <= .35f;
+                if (doubleClick)
+                {
+                    UnitKind kind = Sim.Units.First(u => u.Id == friendly).Kind;
+                    if (!additive) Selected.Clear();
+                    foreach (var unit in Sim.Units.Where(u => u.Team == 0 && u.Alive && u.Kind == kind))
+                    {
+                        Vector3 visible = ViewCamera.WorldToViewportPoint(new Vector3(unit.Position.x, .6f, unit.Position.y));
+                        if (visible.z > 0 && visible.x >= 0 && visible.x <= 1 && visible.y >= 0 && visible.y <= 1) Selected.Add(unit.Id);
+                    }
+                    Notify("Visible " + BattleSimulation.UnitName(kind, true).ToLowerInvariant() + " selected");
+                    lastClickedUnit = -1;
+                }
+                else { SelectAt(screen, screen, false, additive); lastClickedUnit = friendly; lastUnitClickTime = Time.unscaledTime; }
+                return;
+            }
             if (Selected.Count == 0) { Notify("Select blue troops or choose a force below first"); return; }
             if (enemy >= 0)
             {
@@ -627,6 +704,7 @@ namespace Tablefront
         {
             if (!CanCommand) return;
             ReleaseUIFocus();
+            AttackMoveArmed = false;
             if (!additive) Selected.Clear();
             if (box)
             {
@@ -652,8 +730,21 @@ namespace Tablefront
             }
             return id;
         }
+        int NearestUnitAt(Vector2 position, float radius)
+        {
+            int friendly = NearestAt(position, true, radius), enemy = NearestAt(position, false, radius);
+            if (friendly < 0) return enemy;
+            if (enemy < 0) return friendly;
+            Vector2 ScreenPosition(int id)
+            {
+                var unit = Sim.Units.First(u => u.Id == id);
+                return ViewCamera.WorldToScreenPoint(new Vector3(unit.Position.x, .6f, unit.Position.y));
+            }
+            return (ScreenPosition(friendly) - position).sqrMagnitude <= (ScreenPosition(enemy) - position).sqrMagnitude ? friendly : enemy;
+        }
         public bool TryGround(Vector2 screen, out Vector2 position)
         {
+            if (screen.x < 0 || screen.y < 0 || screen.x > Screen.width || screen.y > Screen.height) { position = default; return false; }
             var ray = ViewCamera.ScreenPointToRay(screen);
             if (ground.Raycast(ray, out float hit))
             {
@@ -680,7 +771,7 @@ namespace Tablefront
         }
         void OnApplicationFocus(bool focused)
         {
-            if (!focused && !InMenu && Sim != null && !Sim.Finished) { Paused = true; CancelPointerGesture(); }
+            if (!focused && !TablefrontBenchmark.IsRunning && !InMenu && Sim != null && !Sim.Finished) { Paused = true; CancelPointerGesture(); }
         }
         void OnDestroy() { if (commandTone) Destroy(commandTone); }
     }

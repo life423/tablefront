@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-11-23T12:55:51.6737242-06:00",
+  "version": "0.5.0",
+  "launchedFrom": "actual desktop Tablefront.lnk",
+  "installedPathCorrect": true,
+  "visibleWindow": true,
+  "responding": true,
+  "sceneInitialized": true,
+  "runtimeExceptionsOrShaderErrors": 0,
+  "nativeScreenVisuallyVerified": true,
+  "observedScreen": "Title with Greenfield map chooser, Tutorial, Play vs AI and Watch AI battle; clean native text and painted tabletop",
+  "screenDimensions": "2560x1440",
+  "nativeGameplayInputSent": false,
+  "frameRateMeasuredSeparately": true,
+  "editorClosed": true,
+  "leftAtTitleForUser": true,
+  "trainingStarted": false
+}

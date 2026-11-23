@@ -1,0 +1,8 @@
+shot=Greenfield; map=Greenfield; size=1280x720; frame=34490; units=18; combatEvents=0
+shot=Ridgeway; map=Ridgeway; size=1280x720; frame=34655; units=18; combatEvents=0
+shot=DustBasin; map=Dust Basin; size=1280x720; frame=34820; units=18; combatEvents=0
+shot=RiverCrossing; map=River Crossing; size=1280x720; frame=34983; units=18; combatEvents=0
+shot=lineup; map=Greenfield; size=1280x720; frame=35151; units=5; combatEvents=0
+shot=gunner; map=Greenfield; size=1280x720; frame=35318; units=5; combatEvents=0
+shot=artillery; map=Greenfield; size=1280x720; frame=35495; units=5; combatEvents=0
+shot=combat; map=Greenfield; size=1280x720; frame=35662; units=28; combatEvents=1

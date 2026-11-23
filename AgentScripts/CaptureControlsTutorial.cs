@@ -40,6 +40,18 @@ public static class CaptureControlsTutorial
             game.StartBattle(false); game.SelectKind(UnitKind.Rifle);
             game.IssueOrder(game.Sim.Points[0].Position);
         }
+        else if (state == "paused" || state == "results" || state == "artillery")
+        {
+            game.StartBattle(false);
+            if (state == "paused") game.TogglePause();
+            else if (state == "results") { game.Sim.Finished = true; game.Sim.Winner = 0; }
+            else
+            {
+                foreach (var army in game.Sim.Armies) army.IsAI = false;
+                game.Sim.Armies[0].Credits = 300; game.Sim.Armies[0].RecruitCooldown = 0;
+                game.Recruit(UnitKind.Artillery); game.SelectKind(UnitKind.Artillery);
+            }
+        }
         else if (state == "help" || state == "shortcuts")
         {
             game.ToggleHelp();

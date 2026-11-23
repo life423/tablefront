@@ -1,0 +1,23 @@
+{
+    "version": "0.5.0",
+    "measuredAtUtc": "2026-11-23T18:52:59.6755452Z",
+    "gpu": "NVIDIA GeForce RTX 5070",
+    "cpu": "13th Gen Intel(R) Core(TM) i7-13700KF",
+    "battlefield": "Dust Basin",
+    "scenario": "30-second Dust Basin spectator sample after 8-second warmup; opening Gunners and Artillery; native display and normal VSync. Not a maximum-army stress test.",
+    "width": 2560,
+    "height": 1440,
+    "samples": 4312,
+    "maximumUnits": 28,
+    "msaaSamples": 8,
+    "shadowAtlas": 8192,
+    "renderScale": 1.5,
+    "measuredSeconds": 30.00171661376953,
+    "simulationSeconds": 29.99968910217285,
+    "averageFps": 143.70179748535156,
+    "medianFrameMs": 6.945897102355957,
+    "p95FrameMs": 6.9662981033325195,
+    "p99FrameMs": 6.984594821929932,
+    "vSyncEnabled": true,
+    "interruptedByPause": false
+}

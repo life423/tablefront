@@ -10,7 +10,7 @@ namespace Tablefront
     /// cosmetic, below the miniature bases, and never adds a collider or changes the map.
     /// All generated resources belong to the caller; no static Unity objects are retained.
     /// </summary>
-    public static class TablefrontTerrainArt
+    public sealed class TablefrontTerrainArt
     {
         public sealed class Palette
         {
@@ -25,9 +25,10 @@ namespace Tablefront
             public float Width;
             public Road(float ax, float az, float bx, float bz, float width)
             { A = new Vector2(ax, az); B = new Vector2(bx, bz); Width = width; }
+            public Road(Vector2 a, Vector2 b, float width) { A = a; B = b; Width = width; }
         }
 
-        static readonly Road[] Roads =
+        readonly Road[] Roads =
         {
             new Road(-10, -6, 10, -6, .92f),
             new Road(-10, -6, 0, 12, .84f),
@@ -36,18 +37,18 @@ namespace Tablefront
             new Road(18.2f, 10.5f, 10, -6, .73f),
             new Road(-18.2f, 10.5f, -10, -6, .73f)
         };
-        static readonly Vector2[] Landmarks =
+        readonly Vector2[] Landmarks =
         {
             new Vector2(0, -21), new Vector2(18.2f, 10.5f), new Vector2(-18.2f, 10.5f),
             new Vector2(-10, -6), new Vector2(10, -6), new Vector2(0, 12)
         };
-        static readonly Vector2[] Groves =
+        readonly Vector2[] Groves =
         {
             new Vector2(-19, -15), new Vector2(-21, -3), new Vector2(-16, 3),
             new Vector2(20, -15), new Vector2(21, 0), new Vector2(15, 4),
             new Vector2(-11, 19), new Vector2(11, 20), new Vector2(-3, 21)
         };
-        static readonly Vector2[] Outcrops =
+        readonly Vector2[] Outcrops =
         {
             new Vector2(-15, -12), new Vector2(14, -13), new Vector2(-5, 18),
             new Vector2(17, -2), new Vector2(-20, 17), new Vector2(21, 18),
@@ -55,8 +56,40 @@ namespace Tablefront
         };
 
         public const float MaximumGroundHeight = .04f;
+        readonly int style;
 
-        public static void Build(Transform parent, Palette palette)
+        TablefrontTerrainArt(BattlefieldDefinition battlefield)
+        {
+            if (battlefield == null) return;
+            style = battlefield.TerrainStyle;
+            var roads = new List<Road>();
+            var clear = new List<Vector2>(battlefield.BasePositions);
+            clear.AddRange(battlefield.PointPositions);
+            for (int i = 0; i < battlefield.PointPositions.Length; i++)
+            {
+                Vector2 point = battlefield.PointPositions[i];
+                roads.Add(new Road(point, battlefield.PointPositions[(i + 1) % battlefield.PointPositions.Length], style == 1 ? .70f : .90f));
+                Vector2 radial = point.normalized, flank = new Vector2(-radial.y, radial.x);
+                clear.Add(point - flank * battlefield.CoverOffset);
+                clear.Add(point + flank * battlefield.CoverOffset);
+            }
+            foreach (Vector2 hq in battlefield.BasePositions)
+            {
+                Vector2 nearest = battlefield.PointPositions[0];
+                foreach (Vector2 point in battlefield.PointPositions) if ((point - hq).sqrMagnitude < (nearest - hq).sqrMagnitude) nearest = point;
+                roads.Add(new Road(hq, nearest, .77f));
+            }
+            Roads = roads.ToArray(); Landmarks = clear.ToArray();
+            float angle = style * .31f;
+            Vector2 Rotate(Vector2 p) => new Vector2(p.x * Mathf.Cos(angle) - p.y * Mathf.Sin(angle), p.x * Mathf.Sin(angle) + p.y * Mathf.Cos(angle)) * .94f;
+            for (int i = 0; i < Groves.Length; i++) Groves[i] = Rotate(Groves[i]);
+            for (int i = 0; i < Outcrops.Length; i++) Outcrops[i] = Rotate(Outcrops[i]);
+        }
+
+        public static void Build(Transform parent, Palette palette, BattlefieldDefinition battlefield = null)
+            => new TablefrontTerrainArt(battlefield).BuildLandscape(parent, palette);
+
+        void BuildLandscape(Transform parent, Palette palette)
         {
             if (!parent || palette == null || !palette.Ground || !palette.Stone || !palette.Bark ||
                 !palette.Grass || !palette.GrassDry || !palette.Leaves || !palette.LeavesLight ||
@@ -78,14 +111,14 @@ namespace Tablefront
                 tufts[i] = palette.OwnMesh(GrassMesh(291 + i * 41));
             }
             var branch = palette.OwnMesh(TaperedBranch());
-            var random = new System.Random(71942);
+            var random = new System.Random(71942 + style * 733);
 
             // Small, deliberately placed groves frame each approach instead of carpeting
             // the tactical triangle. Objective rings and all six routes stay unobscured.
             int treeIndex = 0;
             foreach (var grove in Groves)
             {
-                int count = treeIndex % 3 == 0 ? 3 : 2;
+                int count = style == 2 ? 1 : treeIndex % 3 == 0 ? 3 : 2;
                 for (int j = 0; j < count; j++)
                 {
                     Vector2 p = grove + new Vector2(Range(random, -1.3f, 1.3f), Range(random, -1.2f, 1.2f));
@@ -148,7 +181,7 @@ namespace Tablefront
             }
         }
 
-        static void PaintGround(Palette palette)
+        void PaintGround(Palette palette)
         {
             const int size = 1024;
             var pixels = new Color32[size * size];
@@ -159,6 +192,19 @@ namespace Tablefront
             Color soil = Color.Lerp(TablePalette.Road, TablePalette.Walnut, .26f);
             Color dust = Color.Lerp(TablePalette.Road, TablePalette.Stone, .18f);
             Color woodland = Color.Lerp(lush, TablePalette.Walnut, .22f) * .92f;
+            if (style == 1)
+            {
+                lush = Color.Lerp(lush, TablePalette.Stone, .23f);
+                dry = Color.Lerp(dry, TablePalette.Stone, .30f);
+                soil = Color.Lerp(soil, TablePalette.Stone, .35f);
+            }
+            else if (style == 2)
+            {
+                lush = Color.Lerp(TablePalette.Sand, TablePalette.Road, .22f);
+                dry = Color.Lerp(TablePalette.Sand, TablePalette.Walnut, .13f);
+                soil = Color.Lerp(TablePalette.Road, TablePalette.Walnut, .37f);
+                woodland = Color.Lerp(TablePalette.Sand, TablePalette.Foliage, .28f);
+            }
 
             for (int y = 0; y < size; y++) for (int x = 0; x < size; x++)
             {
@@ -191,6 +237,26 @@ namespace Tablefront
                 earth = Color.Lerp(earth, TablePalette.Walnut, rut * .20f);
                 earth = Color.Lerp(earth, grass, centreGrass);
                 Color color = Color.Lerp(grass, earth, road);
+                if (style == 1)
+                {
+                    // Pale slate seams are shallow flock details, not movement barriers.
+                    float seam = 1 - SmoothEdge(.12f, 1.15f, Mathf.Abs(wz - Mathf.Sin(wx * .15f) * 4f - 7f));
+                    color = Color.Lerp(color, TablePalette.Stone, seam * (1 - road) * .32f);
+                }
+                if (style == 3)
+                {
+                    // A painted shallow stream with dry route crossings: fully passable
+                    // under the same simulation rules as the rest of the board.
+                    // This bend passes through the three actual ford objectives:
+                    // (-6.25,-10.825), (12.5,0), (-6.25,10.825). Normalize by
+                    // its slope so its painted width stays consistent around the bend.
+                    float riverX = 12.5f - .16f * wz * wz;
+                    float streamDistance = Mathf.Abs(wx - riverX) / Mathf.Sqrt(1 + .1024f * wz * wz);
+                    float bank = 1 - SmoothEdge(1.2f, 2.2f, streamDistance);
+                    float water = (1 - SmoothEdge(.92f, 1.42f, streamDistance)) * (1 - road);
+                    color = Color.Lerp(color, Color.Lerp(TablePalette.Stone, TablePalette.Sand, .45f), bank * (1 - road) * .45f);
+                    color = Color.Lerp(color, Color.Lerp(TablePalette.SkyBounce, TablePalette.Ink, .48f), water * .88f);
+                }
                 // Tiny palette-derived mineral flecks are deliberately sparse, avoiding
                 // a high-contrast noise blanket when the camera pulls back.
                 if (fleck > .995f) color = Color.Lerp(color, TablePalette.Stone, .18f);
@@ -242,7 +308,7 @@ namespace Tablefront
             texture.SetPixels32(pixels); texture.Apply(true, true); return texture;
         }
 
-        public static float GroundHeight(float x, float z)
+        float GroundHeight(float x, float z)
         {
             float broad = Mathf.PerlinNoise(x * .35f + 41, z * .35f + 71);
             float detail = Mathf.PerlinNoise(x * 1.2f + 13, z * 1.2f + 19);
@@ -254,7 +320,7 @@ namespace Tablefront
             return .002f + (broad * .025f + detail * .010f) * landmark * edge;
         }
 
-        static Mesh GroundMesh()
+        Mesh GroundMesh()
         {
             const int cells = 160;
             int row = cells + 1;
@@ -278,7 +344,7 @@ namespace Tablefront
             return Mesh("Sculpted 50m continuous board relief", vertices, uv, triangles);
         }
 
-        static void Tree(Transform parent, Vector2 p, float size, int index, Mesh branch, Mesh[] crowns,
+        void Tree(Transform parent, Vector2 p, float size, int index, Mesh branch, Mesh[] crowns,
             Palette palette, System.Random random)
         {
             Transform root = Group("Handcrafted broadleaf tree", parent);
@@ -424,7 +490,7 @@ namespace Tablefront
             return mesh;
         }
 
-        static void RoadDistance(Vector2 p, out float lateral, out float width)
+        void RoadDistance(Vector2 p, out float lateral, out float width)
         {
             float nearest = float.MaxValue; lateral = 99; width = .7f;
             for (int i = 0; i < Roads.Length; i++)
@@ -440,7 +506,7 @@ namespace Tablefront
             }
         }
 
-        static bool SceneryClear(Vector2 p, float landmarkRadius, float roadRadius)
+        bool SceneryClear(Vector2 p, float landmarkRadius, float roadRadius)
         {
             if (Mathf.Abs(p.x) > 24 || Mathf.Abs(p.y) > 24) return false;
             for (int i = 0; i < Landmarks.Length; i++) if (Vector2.Distance(p, Landmarks[i]) < landmarkRadius) return false;
