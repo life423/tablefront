@@ -1,0 +1,22 @@
+{
+  "matchingPayloadFiles": 190,
+  "upgradedFrom": "0.5.0",
+  "version": "0.6.0",
+  "installLocation": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront",
+  "trainingPerformed": false,
+  "policySHA256": "07ee559f4ae04a0023d0d451757a4bb2772e18c7aec1c52ca89eaefee3052181",
+  "installerSHA256": "64a1bc4111969ffda4530eab8bef1543f7f694c069202fcc890db21ea4399c05",
+  "shortcuts": [
+    {
+      "target": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront\\StartTablefront.exe",
+      "path": "C:\\Users\\aiand\\OneDrive\\Desktop\\Tablefront.lnk",
+      "workingDirectory": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront"
+    },
+    {
+      "target": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront\\StartTablefront.exe",
+      "path": "C:\\Users\\aiand\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Tablefront\\Tablefront.lnk",
+      "workingDirectory": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront"
+    }
+  ],
+  "installerBytes": 29767624
+}

@@ -79,6 +79,21 @@ namespace Tablefront
                 foreach (Vector2 point in battlefield.PointPositions) if ((point - hq).sqrMagnitude < (nearest - hq).sqrMagnitude) nearest = point;
                 roads.Add(new Road(hq, nearest, .77f));
             }
+            if (style == 4)
+            {
+                // The mission's only water crossing is the actual movable bridge.
+                // Keep all painted supply roads on the banks and lead to both dock choices.
+                roads.Clear();
+                roads.Add(new Road(new Vector2(-18, -12), new Vector2(-12, -8), .85f));
+                roads.Add(new Road(new Vector2(18, 12), new Vector2(12, 8), .85f));
+                foreach (int bank in new[] { -1, 1 })
+                    foreach (int landing in new[] { -1, 1 })
+                    {
+                        Vector2 end = new Vector2(bank * 6, landing * 8);
+                        roads.Add(new Road(new Vector2(bank * 12, bank * 8), end, .92f));
+                        clear.Add(end);
+                    }
+            }
             Roads = roads.ToArray(); Landmarks = clear.ToArray();
             float angle = style * .31f;
             Vector2 Rotate(Vector2 p) => new Vector2(p.x * Mathf.Cos(angle) - p.y * Mathf.Sin(angle), p.x * Mathf.Sin(angle) + p.y * Mathf.Cos(angle)) * .94f;
@@ -257,12 +272,22 @@ namespace Tablefront
                     color = Color.Lerp(color, Color.Lerp(TablePalette.Stone, TablePalette.Sand, .45f), bank * (1 - road) * .45f);
                     color = Color.Lerp(color, Color.Lerp(TablePalette.SkyBounce, TablePalette.Ink, .48f), water * .88f);
                 }
+                if (style == 4)
+                {
+                    float bank = 1 - SmoothEdge(3.49f, 3.88f, Mathf.Abs(wx));
+                    float water = 1 - SmoothEdge(3.44f, 3.56f, Mathf.Abs(wx));
+                    color = Color.Lerp(color, Color.Lerp(TablePalette.Stone, TablePalette.Sand, .55f), bank * .85f);
+                    Color channel = Color.Lerp(TablePalette.SkyBounce, TablePalette.Ink, .57f);
+                    channel *= .94f + .035f * Mathf.Sin(wz * .72f + wx * .27f) + fine * .025f;
+                    color = Color.Lerp(color, channel, water);
+                }
                 // Tiny palette-derived mineral flecks are deliberately sparse, avoiding
                 // a high-contrast noise blanket when the camera pulls back.
                 if (fleck > .995f) color = Color.Lerp(color, TablePalette.Stone, .18f);
                 int index = y * size + x;
                 pixels[index] = color;
                 float smooth = Mathf.Lerp(.12f, .20f, road);
+                if (style == 4 && Mathf.Abs(wx) < 3.5f) smooth = .48f;
                 byte ao = (byte)Mathf.RoundToInt((.91f + fine * .08f) * 255);
                 mask[index] = new Color32(0, ao, 0, (byte)Mathf.RoundToInt(smooth * 255));
                 height[index] = (fine * .65f + fleck * .35f) * Mathf.Lerp(.026f, .010f, road) - rut * road * .014f;
@@ -310,6 +335,8 @@ namespace Tablefront
 
         float GroundHeight(float x, float z)
         {
+            if (style == 4 && Mathf.Abs(x) < 3.5f)
+                return -.075f;
             float broad = Mathf.PerlinNoise(x * .35f + 41, z * .35f + 71);
             float detail = Mathf.PerlinNoise(x * 1.2f + 13, z * 1.2f + 19);
             float landmark = 1;
@@ -509,6 +536,7 @@ namespace Tablefront
         bool SceneryClear(Vector2 p, float landmarkRadius, float roadRadius)
         {
             if (Mathf.Abs(p.x) > 24 || Mathf.Abs(p.y) > 24) return false;
+            if (style == 4 && (Mathf.Abs(p.x) < 4.1f || p.sqrMagnitude < 12.2f * 12.2f)) return false;
             for (int i = 0; i < Landmarks.Length; i++) if (Vector2.Distance(p, Landmarks[i]) < landmarkRadius) return false;
             RoadDistance(p, out float lateral, out float width);
             return Mathf.Abs(lateral) > width + roadRadius;

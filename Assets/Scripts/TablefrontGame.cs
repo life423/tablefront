@@ -19,6 +19,7 @@ namespace Tablefront
         public int Speed { get; private set; } = 1;
         public BattlefieldId SelectedBattlefield { get; private set; } = BattlefieldId.Greenfield;
         public bool AttackMoveArmed { get; private set; }
+        public bool MissionActive => !InMenu && Sim != null && Sim.MissionActive;
         public string Notice => Time.unscaledTime < noticeUntil ? notice : "";
         public Camera ViewCamera { get; private set; }
         public TablefrontHUD HUD { get; private set; }
@@ -69,6 +70,10 @@ namespace Tablefront
             {
                 var units = Sim.Units.Where(u => u.Alive && Selected.Contains(u.Id)).ToArray();
                 if (units.Length == 0) return "Choose a force to give orders";
+                int riding = Sim.MissionActive ? units.Count(u => Sim.Bridge.IsRiding(u.Id)) : 0;
+                if (riding > 0) return riding + " riding bridge · orders resume when docked";
+                int waiting = units.Count(u => u.WaitingForBridge);
+                if (waiting > 0) return waiting + (waiting == 1 ? " unit waiting for the crossing" : " units waiting for the crossing");
                 if (units.All(u => u.HoldPosition)) return "Holding position · fire at enemies in range";
                 int moving = units.Count(u => u.HasOrder && Vector2.Distance(u.Position, u.Destination) > 1.2f);
                 if (units.Any(u => u.AttackTargetId >= 0)) return "Focus fire · enemy unit";
@@ -98,12 +103,15 @@ namespace Tablefront
             get
             {
                 if (!Sim.Finished) return "";
-                if (Sim.Winner < 0) return "Draw · all headquarters fell.\nChoose Rematch for a fresh battle.";
+                if (Sim.Winner < 0) return "Draw · " + (Sim.MissionActive ? Sim.MissionWinReason : "all headquarters fell") + ".\nChoose Rematch for a fresh battle.";
                 Army winner = Sim.Armies[Sim.Winner];
-                string reason = winner.Score >= BattleSimulation.VictoryScore ? "won through beacon control" : "was the last headquarters standing";
+                string reason = Sim.MissionActive ? Sim.MissionHoldSeconds(Sim.Winner) >= BattleSimulation.MissionHoldRequired ? "held the enemy Depot for 45 seconds" : "destroyed the opposing headquarters" : winner.Score >= BattleSimulation.VictoryScore ? "won through beacon control" : "was the last headquarters standing";
                 var lines = new List<string> { winner.Name + " " + reason + "." };
                 foreach (Army army in Sim.Armies)
+                {
+                    if (Sim.MissionActive && army.Id > 1) continue;
                     lines.Add(army.Name + "  ·  " + army.BeaconsCaptured + " captures  ·  " + army.UnitsDestroyed + " destroyed / " + army.UnitsLost + " lost");
+                }
                 if (!startedAsSpectator) lines.Add("Your reinforcements: " + Sim.Armies[0].ReinforcementsDeployed + "  ·  Combined beacon hold: " + FormatTime(Sim.Armies[0].BeaconSeconds));
                 if (!string.IsNullOrEmpty(Sim.LastTurningPoint)) lines.Add(FormatTime(Sim.LastTurningPointTime) + "  ·  " + Sim.LastTurningPoint);
                 return string.Join("\n", lines);
@@ -175,6 +183,7 @@ namespace Tablefront
             masterVolume = PlayerPrefs.GetFloat("Tablefront.Volume", .65f);
             reducedMotion = PlayerPrefs.GetInt("Tablefront.ReducedMotion", 0) != 0;
             SelectedBattlefield = TablefrontBattlefields.Get((BattlefieldId)PlayerPrefs.GetInt("Tablefront.Battlefield", 0)).Id;
+            if (SelectedBattlefield == BattlefieldId.BridgeGambit) SelectedBattlefield = BattlefieldId.Greenfield;
             AudioListener.volume = masterVolume;
             var camObject = new GameObject("Tabletop lens", typeof(Camera), typeof(AudioListener), typeof(CinemachineBrain));
             ViewCamera = camObject.GetComponent<Camera>();
@@ -240,7 +249,7 @@ namespace Tablefront
         void StartBattleOn(bool spectator, BattlefieldId battlefield)
         {
             World.ClearBattle();
-            Sim = new BattleSimulation(spectator, 42 + matchIndex++, battlefield) { ExpandedRoster = true };
+            Sim = new BattleSimulation(spectator, 42 + matchIndex++, battlefield) { ExpandedRoster = battlefield != BattlefieldId.BridgeGambit };
             World.SetBattlefield(Sim);
             startedAsSpectator = spectator; TutorialActive = false; TutorialStep = 0;
             ResetBattleTracking();
@@ -251,8 +260,9 @@ namespace Tablefront
             bool northernHQ = battlefield == BattlefieldId.RiverCrossing;
             wantedFocus = new Vector3(0, 0, northernHQ ? -7 : -12);
             wantedDistance = northernHQ ? 74 : 68; wantedYaw = 0;
+            if (Sim.MissionActive) { wantedFocus = new Vector3(0, 0, -2); wantedDistance = 73; }
             if (!spectator) foreach (var u in Sim.Units.Where(u => u.Team == 0 && u.Alive)) Selected.Add(u.Id);
-            Notify(spectator ? "Three commanders. One battlefield." : "Choose a force below, then click a beacon to move.");
+            Notify(Sim.MissionActive ? "Bridge Gambit · Capture the enemy Depot or destroy its HQ" : spectator ? "Three commanders. One battlefield." : "Choose a force below, then click a beacon to move.");
             World.Render(Sim, Selected); HUD.Refresh();
         }
         public void StartTutorial()
@@ -270,10 +280,12 @@ namespace Tablefront
             World.Render(Sim, Selected);
             HUD.Refresh();
         }
-        public void Rematch() { if (TutorialActive) StartTutorial(); else StartBattle(startedAsSpectator); }
+        public void StartBridgeMission() { StartBattleOn(false, BattlefieldId.BridgeGambit); }
+        public void Rematch() { if (TutorialActive) StartTutorial(); else if (Sim.MissionActive) StartBridgeMission(); else StartBattle(startedAsSpectator); }
         public void SetBattlefield(BattlefieldId battlefield)
         {
             if (!InMenu) return;
+            if (battlefield == BattlefieldId.BridgeGambit) battlefield = BattlefieldId.Greenfield;
             SelectedBattlefield = TablefrontBattlefields.Get(battlefield).Id;
             PlayerPrefs.SetInt("Tablefront.Battlefield", (int)SelectedBattlefield);
             World.ClearBattle();
@@ -282,7 +294,7 @@ namespace Tablefront
         }
         public void NextBattlefield()
         {
-            if (!Sim.Finished || TutorialActive) return;
+            if (!Sim.Finished || TutorialActive || Sim.MissionActive) return;
             SelectedBattlefield = TablefrontBattlefields.All[((int)Sim.Battlefield.Id + 1) % TablefrontBattlefields.All.Length].Id;
             PlayerPrefs.SetInt("Tablefront.Battlefield", (int)SelectedBattlefield);
             StartBattle(startedAsSpectator);
@@ -475,6 +487,15 @@ namespace Tablefront
             if (!CanCommand || Selected.Count == 0 || float.IsNaN(location.x) || float.IsNaN(location.y) || float.IsInfinity(location.x) || float.IsInfinity(location.y)) return false;
             if (targetId >= 0 && !Sim.Units.Any(u => u.Id == targetId && u.Alive && u.Team != 0)) return false;
             location = new Vector2(Mathf.Clamp(location.x, -24, 24), Mathf.Clamp(location.y, -24, 24));
+            if (Sim.MissionActive && targetId < 0)
+            {
+                var largest = Sim.Units.Where(u => u.Alive && u.Team == 0 && Selected.Contains(u.Id)).OrderByDescending(u => BattleSimulation.UnitRadius(u.Kind)).FirstOrDefault();
+                if (largest == null) return false;
+                if (!Sim.DestinationAllowed(location, largest.Kind))
+                { Notify("Water blocks movement. Choose a bank or the bridge."); return false; }
+                if (Sim.Bridge.Phase != BridgePhase.Stable && Mathf.Abs(location.x) < TablefrontBridge.RiverHalfWidth + BattleSimulation.UnitRadius(largest.Kind))
+                { Notify("The bridge is switching. Choose a landing bank."); return false; }
+            }
             if (targetId >= 0) Sim.OrderAttack(Selected, targetId); else Sim.OrderMove(Selected, location, attackMove);
             AttackMoveArmed = false; lastClickedUnit = -1;
             World.ShowOrder(location);
@@ -505,6 +526,22 @@ namespace Tablefront
             if (!CanCommand || Selected.Count == 0) return;
             ReleaseUIFocus(); Sim.OrderStop(Selected, true); CancelPointerGesture(); Notify("Hold position · fire without pursuing");
         }
+        public bool RequestBridge(BridgeRoute route)
+        {
+            if (!CanCommand || !Sim.MissionActive) return false;
+            if (Sim.Bridge.Phase != BridgePhase.Stable) { Notify("The bridge is already changing routes"); return false; }
+            if (route == Sim.Bridge.CurrentRoute) { Notify("That crossing is already open"); return false; }
+            if (Sim.Bridge.CommandsRemaining(0) <= 0) { Notify("All three bridge commands are spent"); return false; }
+            if (Sim.Bridge.CooldownRemaining(0) > 0) { Notify("Bridge control ready in " + Mathf.CeilToInt(Sim.Bridge.CooldownRemaining(0)) + " seconds"); return false; }
+            if (!Sim.TryRequestBridge(0, route)) return false;
+            ReleaseUIFocus(); CancelPointerGesture();
+            Notify("Bridge switch queued · three-second warning"); return true;
+        }
+        public bool ToggleBridge()
+        {
+            if (Sim == null || !Sim.MissionActive) return false;
+            return RequestBridge(Sim.Bridge.CurrentRoute == BridgeRoute.North ? BridgeRoute.South : BridgeRoute.North);
+        }
         static string FormatTime(float seconds) => ((int)seconds / 60).ToString("00") + ":" + ((int)seconds % 60).ToString("00");
         public void ReturnToMenu()
         {
@@ -522,6 +559,8 @@ namespace Tablefront
         public void Recruit(UnitKind kind)
         {
             if (InMenu || Spectator || Paused || HelpOpen || Sim.Finished) return;
+            if (Sim.MissionActive && (kind == UnitKind.Gunner || kind == UnitKind.Artillery))
+            { Notify("Bridge Gambit uses Scouts, Rifles and Tanks"); return; }
             if (TutorialActive && TutorialStep < 6 && (TutorialStep != 3 || kind != UnitKind.Rifle))
             { Notify("Follow the marked lesson. Recruitment unlocks at step 4."); return; }
             bool added = Sim.Recruit(0, kind);
@@ -590,6 +629,7 @@ namespace Tablefront
                     if (kb.aKey.wasPressedThisFrame) ToggleAttackMove();
                     if (kb.sKey.wasPressedThisFrame) StopSelected();
                     if (kb.hKey.wasPressedThisFrame) HoldSelected();
+                    if (kb.rKey.wasPressedThisFrame) ToggleBridge();
                 }
                 for (int slot = 0; slot < groups.Length; slot++)
                 {

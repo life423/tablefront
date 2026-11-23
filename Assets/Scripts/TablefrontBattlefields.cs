@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Tablefront
 {
-    public enum BattlefieldId { Greenfield, Ridgeway, DustBasin, RiverCrossing }
+    public enum BattlefieldId { Greenfield, Ridgeway, DustBasin, RiverCrossing, BridgeGambit }
 
     /// <summary>Shared rules/art layout. Cosmetic terrain never changes these passable routes.</summary>
     public sealed class BattlefieldDefinition
@@ -26,6 +26,13 @@ namespace Tablefront
 
     public static class TablefrontBattlefields
     {
+        // A separately entered experiment, deliberately outside the four-map skirmish roster.
+        public static readonly BattlefieldDefinition BridgeMission = new BattlefieldDefinition(
+            BattlefieldId.BridgeGambit, "Bridge Gambit",
+            "Swing the crossing, flank the tank line, and hold the enemy depot for 45 seconds.",
+            new[] { new Vector2(-18, -12), new Vector2(18, 12), new Vector2(0, 23) },
+            new[] { new Vector2(-12, -8), new Vector2(12, 8), Vector2.zero },
+            new[] { "COBALT DEPOT", "EMBER DEPOT", "ROTARY" }, 4f, 2.2f, 4);
         // Each added layout has rotationally equal approach distances for the three seats.
         // The original layout remains byte-for-byte equivalent for tutorial/training replay.
         public static readonly BattlefieldDefinition[] All =
@@ -51,6 +58,7 @@ namespace Tablefront
 
         public static BattlefieldDefinition Get(BattlefieldId id)
         {
+            if (id == BattlefieldId.BridgeGambit) return BridgeMission;
             int index = (int)id;
             return index >= 0 && index < All.Length ? All[index] : All[0];
         }

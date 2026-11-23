@@ -8,7 +8,7 @@ $engine='C:\Program Files\Unity\Hub\Editor\6000.6.10f1\Editor\Data\Managed\Unity
 $core=Join-Path $engine 'UnityEngine.CoreModule.dll'
 $json=Join-Path $engine 'UnityEngine.JSONSerializeModule.dll'
 $outputDll=Join-Path $testRoot 'frozen-tactical-tests.dll'
-& dotnet 'C:\Program Files\dotnet\sdk\9.0.304\Roslyn\bincore\csc.dll' /nologo /noconfig /nostdlib /target:exe ('/out:'+$outputDll) @referenceArgs ('/reference:'+$core) ('/reference:'+$json) (Join-Path $runtimeRoot 'BattleSimulation.cs') (Join-Path $runtimeRoot 'TablefrontBattlefields.cs') (Join-Path $runtimeRoot 'NeuralCommander.cs') (Join-Path $testRoot 'VerifyTacticalPolicy.cs')
+& dotnet 'C:\Program Files\dotnet\sdk\9.0.304\Roslyn\bincore\csc.dll' /nologo /noconfig /nostdlib /target:exe ('/out:'+$outputDll) @referenceArgs ('/reference:'+$core) ('/reference:'+$json) (Join-Path $runtimeRoot 'BattleSimulation.cs') (Join-Path $runtimeRoot 'TablefrontBattlefields.cs') (Join-Path $runtimeRoot 'TablefrontBridge.cs') (Join-Path $runtimeRoot 'NeuralCommander.cs') (Join-Path $testRoot 'VerifyTacticalPolicy.cs')
 if($LASTEXITCODE -ne 0){throw 'Frozen tactical verification compile failed'}
 Copy-Item -LiteralPath $core -Destination (Join-Path $testRoot 'UnityEngine.CoreModule.dll') -Force
 Copy-Item -LiteralPath $json -Destination (Join-Path $testRoot 'UnityEngine.JSONSerializeModule.dll') -Force

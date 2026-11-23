@@ -32,6 +32,7 @@ namespace Tablefront
         public float Health, MaxHealth, Heading, ShotFlash;
         public bool HasOrder;
         public bool HoldPosition;
+        public bool WaitingForBridge;
         public int AttackTargetId = -1;
         public bool Alive => Health > 0f;
         internal float WeaponTimer;
@@ -82,9 +83,13 @@ namespace Tablefront
         public const float RifleCoverDamageMultiplier = .65f;
         public const float TankArmorDamageMultiplier = 1.2f;
         public const float ArtilleryMinimumRange = 4.5f;
+        public const float MissionHoldRequired = 45f;
         public static readonly UnitKind[] UnitKinds = { UnitKind.Scout, UnitKind.Rifle, UnitKind.Tank, UnitKind.Gunner, UnitKind.Artillery };
 
         public BattlefieldDefinition Battlefield { get; }
+        public bool MissionActive => Battlefield.Id == BattlefieldId.BridgeGambit;
+        public TablefrontBridge Bridge { get; }
+        public string MissionWinReason { get; private set; } = "";
         /// <summary>Current skirmishes enable the five-unit role adapter; old trainers/replays default to the original three.</summary>
         public bool ExpandedRoster;
 
@@ -109,6 +114,8 @@ namespace Tablefront
         readonly List<int> orderScratch = new List<int>(30);
         readonly int[] captureCounts = new int[3];
         readonly float[] captureWeights = new float[3];
+        readonly float[] missionHold = new float[2];
+        readonly float[] bridgeDecisionTimers = new float[2];
         int nextId = 1, stepNumber;
 
         struct Hit
@@ -152,6 +159,7 @@ namespace Tablefront
         }
 
         public static float WeaponRange(UnitKind kind) => Specifications(kind).Range;
+        public static float UnitRadius(UnitKind kind) => Specifications(kind).Radius;
         public static float MinimumWeaponRange(UnitKind kind) => kind == UnitKind.Artillery ? ArtilleryMinimumRange : 0f;
 
         public static string UnitName(UnitKind kind, bool plural = false)
@@ -195,6 +203,33 @@ namespace Tablefront
                 Spawn(army, UnitKind.Rifle);
                 Spawn(army, UnitKind.Scout);
             }
+            if (MissionActive)
+            {
+                Bridge = new TablefrontBridge();
+                Armies[2].BaseHealth = 0; Armies[2].IsAI = false; Armies[2].Credits = 0; Armies[2].Intent = "Not deployed";
+                Units.RemoveAll(unit => unit.Team == 2);
+                Points[0].Owner = Points[0].CapturingTeam = 0; Points[0].CaptureProgress = 1;
+                Points[1].Owner = Points[1].CapturingTeam = 1; Points[1].CaptureProgress = 1;
+                CoverZones.Clear();
+                CoverZones.Add(new CoverZone { Name = "Cobalt north cover", Position = new Vector2(-11, 12), Radius = 2.2f });
+                CoverZones.Add(new CoverZone { Name = "Cobalt south cover", Position = new Vector2(-8, -12), Radius = 2.2f });
+                CoverZones.Add(new CoverZone { Name = "Cobalt depot cover", Position = new Vector2(-15, -5), Radius = 2.2f });
+                CoverZones.Add(new CoverZone { Name = "Ember south cover", Position = new Vector2(11, -12), Radius = 2.2f });
+                CoverZones.Add(new CoverZone { Name = "Ember north cover", Position = new Vector2(8, 12), Radius = 2.2f });
+                CoverZones.Add(new CoverZone { Name = "Ember depot cover", Position = new Vector2(15, 5), Radius = 2.2f });
+                foreach (var unit in Units) unit.Position = unit.Destination = Bridge.ProjectDestination(unit.Position, Specifications(unit.Kind).Radius);
+            }
+        }
+
+        public float MissionHoldSeconds(int team) => team >= 0 && team < 2 ? missionHold[team] : 0;
+        public bool DestinationAllowed(Vector2 location, UnitKind kind = UnitKind.Rifle) =>
+            !MissionActive || Bridge.IsWalkable(location, UnitRadius(kind));
+        public bool TryRequestBridge(int team, BridgeRoute target)
+        {
+            if (!MissionActive || PracticeMode || Finished || team < 0 || team > 1 || !Armies[team].Alive) return false;
+            bool accepted = Bridge.TryRequest(team, target, Units);
+            if (accepted) RecordTurningPoint(Armies[team].Name + " ordered the " + target.ToString().ToLowerInvariant() + " bridge route");
+            return accepted;
         }
 
         Army NewArmy(int id, string name, Vector2 position, bool ai)
@@ -252,6 +287,7 @@ namespace Tablefront
         public bool Recruit(int team, UnitKind kind)
         {
             if (Finished || team < 0 || team >= Armies.Count || (int)kind < 0 || (int)kind >= UnitKinds.Length) return false;
+            if (MissionActive && (kind == UnitKind.Gunner || kind == UnitKind.Artillery)) return false;
             Army army = Armies[team];
             int cost = Cost(kind);
             if (!army.Alive || army.RecruitCooldown > 0f || army.Credits + .001f < cost || UnitCount(team) >= UnitCap) return false;
@@ -309,7 +345,7 @@ namespace Tablefront
         UnitKind ReinforcementForAction(int team, int action)
         {
             UnitKind original = (UnitKind)(action - 6);
-            if (!ExpandedRoster || PracticeMode) return original;
+            if (!ExpandedRoster || PracticeMode || MissionActive) return original;
             int rifles = 0, gunners = 0, tanks = 0, artillery = 0;
             foreach (var unit in Units)
             {
@@ -438,7 +474,9 @@ namespace Tablefront
                 Vector2 offset = new Vector2((slot % width - (width - 1) * .5f) * 1.45f,
                     (slot / width - (rows - 1) * .5f) * 1.45f);
                 unit.Destination = Bound(target + offset);
+                if (MissionActive) unit.Destination = Bridge.ProjectDestination(unit.Destination, Specifications(unit.Kind).Radius);
                 unit.HasOrder = true;
+                unit.WaitingForBridge = false;
                 unit.AttackMove = attackMove;
                 unit.HoldPosition = false;
                 unit.AttackTargetId = -1;
@@ -459,6 +497,7 @@ namespace Tablefront
                 unit.HasOrder = true;
                 unit.AttackMove = true;
                 unit.HoldPosition = false;
+                unit.WaitingForBridge = false;
                 unit.BaseTargetTeam = -1;
                 unit.Destination = target.Position;
             }
@@ -473,6 +512,7 @@ namespace Tablefront
                 if (unit == null || !unit.Alive) continue;
                 unit.Destination = unit.Position;
                 unit.HasOrder = false; unit.HoldPosition = hold;
+                unit.WaitingForBridge = false;
                 unit.AttackTargetId = unit.BaseTargetTeam = -1;
                 unit.AttackMove = true;
             }
@@ -497,6 +537,7 @@ namespace Tablefront
             Elapsed += dt;
             stepNumber++;
             pendingHits.Clear();
+            if (MissionActive) Bridge.Step(dt, Units);
             for (int i = 0; i < Armies.Count; i++)
             {
                 Army army = Armies[i];
@@ -518,6 +559,7 @@ namespace Tablefront
                 }
                 if (!PracticeMode) Turret(army, dt);
             }
+            if (MissionActive && !UseExternalAI) UpdateBridgeCommanders(dt);
 
             // Rotate the first mover; hits are resolved together after all units have fired.
             int count = Units.Count;
@@ -528,8 +570,41 @@ namespace Tablefront
             }
             ResolveHits();
             for (int i = 0; i < Points.Count; i++) UpdatePoint(Points[i], dt);
+            if (MissionActive)
+                for (int team = 0; team < 2; team++)
+                {
+                    ControlPoint depot = Points[1 - team];
+                    missionHold[team] = Armies[team].Alive && depot.Owner == team && !depot.Contested &&
+                        (depot.CapturingTeam < 0 || depot.CapturingTeam == team) ? missionHold[team] + dt : 0;
+                }
             for (int i = Units.Count - 1; i >= 0; i--) if (!Units[i].Alive) Units.RemoveAt(i);
             CheckVictory();
+        }
+
+        void UpdateBridgeCommanders(float dt)
+        {
+            // Prototype terrain control, deliberately separate from the frozen neural macro policy.
+            // Evaluate only actual cross-bank orders and spend the same resources as a player.
+            for (int team = 0; team < 2; team++)
+            {
+                bridgeDecisionTimers[team] -= dt;
+                if (bridgeDecisionTimers[team] > 0 || !Armies[team].Alive || !Armies[team].IsAI || Elapsed < 8) continue;
+                bridgeDecisionTimers[team] = 3f;
+                if (Bridge.Phase != BridgePhase.Stable || Bridge.CooldownRemaining(team) > 0 || Bridge.CommandsRemaining(team) <= 0) continue;
+                BridgeRoute alternative = Bridge.CurrentRoute == BridgeRoute.North ? BridgeRoute.South : BridgeRoute.North;
+                float current = 0, changed = 0;
+                int relevant = 0;
+                foreach (var unit in Units)
+                {
+                    if (!unit.Alive || unit.Team != team || !unit.HasOrder || unit.HoldPosition ||
+                        Mathf.Abs(unit.Position.x) < TablefrontBridge.RiverHalfWidth + UnitRadius(unit.Kind) ||
+                        unit.Position.x * unit.Destination.x >= 0) continue;
+                    relevant++;
+                    current += Bridge.RouteCost(unit.Position, unit.Destination, UnitRadius(unit.Kind), Bridge.CurrentRoute);
+                    changed += Bridge.RouteCost(unit.Position, unit.Destination, UnitRadius(unit.Kind), alternative);
+                }
+                if (relevant > 0 && current - changed > relevant * 3f) TryRequestBridge(team, alternative);
+            }
         }
 
         void UpdateUnit(Troop unit, float dt)
@@ -540,6 +615,8 @@ namespace Tablefront
             unit.WeaponTimer = Mathf.Max(0f, unit.WeaponTimer - dt);
             Army home = Armies[unit.Team];
             if (!home.Alive) { unit.Health = 0f; return; }
+            if (MissionActive && Bridge.IsRiding(unit.Id)) return;
+            unit.WaitingForBridge = false;
             if ((unit.Position - home.BasePosition).sqrMagnitude < 21f && home.SinceDamage > 3f)
                 unit.Health = Mathf.Min(unit.MaxHealth, unit.Health + dt * 3f);
 
@@ -625,8 +702,10 @@ namespace Tablefront
             }
 
             Vector2 steering = Vector2.zero;
+            bool finalDestination = true;
             if (move && !unit.HoldPosition)
             {
+                if (MissionActive) movementTarget = Bridge.NextWaypoint(unit, movementTarget, stats.Radius, out finalDestination);
                 Vector2 delta = movementTarget - unit.Position;
                 float distance = delta.magnitude;
                 if (distance > .22f)
@@ -634,7 +713,7 @@ namespace Tablefront
                     steering = delta / distance * Mathf.Min(stats.Speed, distance / Mathf.Max(dt, .001f));
                     if (!firedOrAiming) Face(unit, delta, dt);
                 }
-                else if (target == null && unit.BaseTargetTeam < 0) unit.HasOrder = false;
+                else if (finalDestination && target == null && unit.BaseTargetTeam < 0) unit.HasOrder = false;
             }
 
             // Soft separation keeps miniature bases readable while permitting movement through a crowd.
@@ -661,7 +740,8 @@ namespace Tablefront
                 float desired = 2.1f + stats.Radius;
                 if (distance < desired && distance > .001f) repel += away / distance * (desired - distance) * 6f;
             }
-            unit.Position = Bound(unit.Position + (steering + Vector2.ClampMagnitude(repel, 3f)) * dt);
+            Vector2 proposed = Bound(unit.Position + (steering + Vector2.ClampMagnitude(repel, 3f)) * dt);
+            unit.Position = MissionActive ? Bridge.ConstrainMovement(unit, proposed, stats.Radius) : proposed;
         }
 
         void Face(Troop unit, Vector2 direction, float dt)
@@ -838,6 +918,21 @@ namespace Tablefront
         void CheckVictory()
         {
             if (PracticeMode) return;
+            if (MissionActive)
+            {
+                bool cobalt = missionHold[0] >= MissionHoldRequired, ember = missionHold[1] >= MissionHoldRequired;
+                if (cobalt || ember)
+                {
+                    Winner = cobalt == ember ? -1 : cobalt ? 0 : 1; Finished = true;
+                    MissionWinReason = Winner < 0 ? "Both depots secured" : "Enemy depot held for 45 seconds";
+                }
+                else if (!Armies[0].Alive || !Armies[1].Alive)
+                {
+                    Winner = Armies[0].Alive == Armies[1].Alive ? -1 : Armies[0].Alive ? 0 : 1; Finished = true;
+                    MissionWinReason = Winner < 0 ? "Both headquarters destroyed" : "Enemy headquarters destroyed";
+                }
+                return;
+            }
             int living = 0, survivor = -1, scoreWinner = -1;
             float highestScore = VictoryScore - .0001f;
             for (int i = 0; i < Armies.Count; i++)

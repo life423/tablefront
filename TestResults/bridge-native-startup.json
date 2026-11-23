@@ -1,0 +1,13 @@
+{
+  "sceneInitialized": true,
+  "launchedVia": "Desktop Tablefront.lnk -> StartTablefront.exe",
+  "processPath": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront\\Tablefront.exe",
+  "nativeVisualStatus": "Blocked by Windows installer permission prompt; no security/permission input sent",
+  "missionStartedViaNativeUI": false,
+  "version": "0.6.0",
+  "nativeGameplayInputsSent": 0,
+  "processId": 36176,
+  "gpu": "NVIDIA GeForce RTX 5070",
+  "scriptOrShaderErrors": [],
+  "graphicsAPI": "Direct3D 12"
+}

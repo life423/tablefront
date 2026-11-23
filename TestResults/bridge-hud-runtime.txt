@@ -1,0 +1,24 @@
+PASS Title exposes a labeled Bridge Gambit mission action
+PASS The mission action starts the actual two-sided bridge rules
+PASS Mission entry preserves the four-map skirmish choice
+PASS Mission header shows only its two active armies
+PASS Mission presents Scouts, Rifles and Tanks without unsupported support-unit buttons
+PASS The mission objective discloses uncontested holding beside the bridge controls
+PASS Bridge control works without selecting a troop
+PASS The visible crossing button spends one real command and starts the warned route change
+PASS Warning feedback identifies the actor, protects riders and keeps the disabled label readable even on hover
+PASS Both sides' remaining command budgets are disclosed
+PASS Pause disables bridge commands without spending another charge
+PASS The moving phase is visible and remains locked
+PASS Docking updates the open crossing while the cooldown remains enforced
+PASS The crossing button unlocks with readable ink on gold and advertises the R shortcut
+PASS Exhausted bridge commands have an explicit disabled state
+PASS The enemy can request the same crossing change under the shared rules
+PASS Enemy bridge commands disclose their actor and actual remaining budget
+PASS Mission rematch restores both command budgets and keeps the mission
+PASS Mission Help explains the Depot objective and blocked water without skirmish-score or unsupported-unit instructions
+PASS Actual enemy-Depot hold progress drives the mission timer and progress bar
+PASS Mission results offer retry instead of silently entering a skirmish level
+PASS The mission results retry button starts fresh bridge rules
+PASS Active mission labels fit the current Game view without TMP overflow
+PASS Returning to skirmish restores its five units and three-army HUD

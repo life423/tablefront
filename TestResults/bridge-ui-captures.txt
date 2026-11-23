@@ -1,0 +1,8 @@
+title 1024x768
+help 1024x768
+paused 1024x768
+results 1024x768
+title 2560x1440
+help 2560x1440
+paused 2560x1440
+results 2560x1440

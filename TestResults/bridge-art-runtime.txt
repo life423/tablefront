@@ -1,0 +1,27 @@
+PASS Bridge Gambit displays its physical crossing
+PASS Bridge artwork adds no conflicting gameplay colliders
+PASS The physical North deck matches the rules' SW-to-NE crossing
+PASS A stable crossing does not leave a warning outline on the board
+PASS The unused third headquarters is absent from the two-army mission
+PASS Bridge, bank guides and preview use supported shared materials
+PASS Bridge planks and trusses are combined into bounded material batches
+PASS The rider reaches the bridge through normal mission navigation
+PASS A troop crossing the river stands on the bridge deck rather than under it
+PASS A real player request starts the announced rotation
+PASS The warning shows the destination footprint and direction
+PASS The preview points to the actual South landing alignment
+PASS The announced player route uses the same blue signal as the army
+PASS The Warning transition selects the dedicated quiet warning bell
+PASS The destination remains visible throughout the three-second warning
+PASS Normal simulation carries the actual bridge passenger
+PASS Reduced motion preserves the exact gameplay bridge pose
+PASS The moving passenger stays on the physical planks
+PASS The Moving transition selects the two-second mechanism sound
+PASS Normal visual smoothing does not let a moving passenger dip into the river
+PASS Docking clears the preview and displays the completed South route
+PASS The docked physical deck matches the new walkable alignment
+PASS The visible bridge ride causes no cosmetic fall or damage
+PASS Docking selects one quiet latch cue
+PASS Ordinary skirmishes hide the mission bridge completely
+PASS Repeated mission and skirmish restarts reuse the bridge and terrain resources
+PASS Enemy requests visibly use the same orange signal as its army

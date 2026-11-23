@@ -1,0 +1,11 @@
+{
+  "status": "completed",
+  "buildId": "build_4249d63f1b48",
+  "result": "Succeeded",
+  "platform": "StandaloneWindows64",
+  "outputPath": "C:/Users/aiand/Documents/programming/lumen-run/Builds/TablefrontBridge/Tablefront.exe",
+  "totalSizeBytes": 107993652,
+  "buildTimeMs": 22149,
+  "totalErrors": 0,
+  "totalWarnings": 0
+}

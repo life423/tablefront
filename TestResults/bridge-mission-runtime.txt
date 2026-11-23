@@ -1,0 +1,20 @@
+PASS Bridge Gambit opens a playable mission without starting the tutorial or spectator mode
+PASS Mission entry preserves the player's skirmish choice
+PASS Mission contains two opposing armies and no hidden third force
+PASS The experiment uses the three familiar unit classes
+PASS Hidden support-unit shortcuts cannot recruit outside the mission roster
+PASS Both sides start with the same three bridge commands
+PASS A click in open water is rejected instead of displaying a false destination marker
+PASS R requests the alternate crossing without requiring a troop selection
+PASS A bridge request spends only its requesting side's command
+PASS Repeated input during the warning cannot spend another command
+PASS Pause freezes the bridge warning and suppresses the shortcut
+PASS Help freezes the bridge and suppresses world control
+PASS The requested warning and movement dock the bridge on the alternate route
+PASS The visible cooldown also governs the controller shortcut
+PASS Rematch resets mission routes, timers and commands rather than opening a skirmish
+PASS Mission results cannot accidentally advance into a normal map
+PASS Returning to the title restores the selected skirmish preview
+PASS The existing six-step tutorial stays separate from the bridge mission
+PASS Ordinary battles retain the five-unit roster and chosen battlefield
+PASS Bridge shortcuts are inert outside the mission

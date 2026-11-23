@@ -20,6 +20,16 @@ The current content pass adds four selectable skirmish battlefields and five uni
 
 Human replay remains necessary to judge whether these changes are understandable and fun. Automated victories and conservative design-review scores do not establish that outcome.
 
+## Bridge Gambit: testing the distinctive mechanic
+
+The user approved building one movable-bridge mission after challenging whether the game offers a compelling reason to play instead of an established RTS. The working hypothesis is that a battlefield the player can reshape creates tactical plans, counterplay and memorable reversals that give the tabletop identity a gameplay purpose.
+
+The 0.6.0 experiment is **Bridge Gambit**: one arena, two armies, three familiar unit classes, and a shared bridge that pivots between two crossings. Both sides receive the same limited command budget, warning, movement time and docking grace. Water is a real movement boundary; troops use navigation through the docked crossing, wait when it changes, and ride it safely if already aboard. Capturing and continuously holding the enemy depot for 45 seconds, or eliminating its HQ, completes the mission. Normal four-map skirmishes and their five-unit roster remain separate.
+
+This makes the proposed mechanic playable, rather than establishing that it is distinctive enough, intuitive or fun. Human playtests should look for deliberate route changes, understandable enemy responses, recoverable mistakes and voluntary replays with a different plan. The next decision is whether to develop this mechanic further, simplify it or replace it based on those observations. A controlled static-versus-movable comparison has not yet been delivered or run.
+
+The neural policy is still frozen. The prototype enemy uses an explicit route-cost bridge controller under the same command rules; it has not learned bridge strategy. Adaptive rivals and resumed reinforcement learning remain future decisions, with training and CudaRL integration paused.
+
 ## Paid v1 and a free demo
 
 The current GitHub playtest remains free to download. A future paid Windows v1 and free demo are the approved product direction. The paid content scope, demo boundary, price, release date and store choice remain undecided. No purchases, subscriptions, ads, online account requirement or storefront publication are implemented by this update.

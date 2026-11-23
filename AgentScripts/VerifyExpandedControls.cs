@@ -63,6 +63,7 @@ public static class VerifyExpandedControls
                     game.Sim.Armies.Select(a => a.BasePosition).SequenceEqual(map.BasePositions),
                     map.Name + " starts its actual expanded-roster layout");
                 game.SendMessage("LateUpdate");
+                await Task.Delay(120); // Allow Cinemachine's actual LateUpdate to follow the changed dolly.
                 Check(game.Sim.Armies.All(a => { var p = game.ViewCamera.WorldToViewportPoint(new Vector3(a.BasePosition.x, 2.4f, a.BasePosition.y)); return p.z > 0 && p.y > .24f && p.y < .86f; }),
                     map.Name + " opening camera keeps HQ tops between header and command deck");
                 game.Rematch();
@@ -140,8 +141,9 @@ public static class VerifyExpandedControls
             rifles[2].Position = rifles[2].Destination = new Vector2(25, 25);
             foreach (var rifle in rifles) rifle.HasOrder = false;
             game.FocusBase(); game.SendMessage("LateUpdate");
+            await Task.Delay(120);
             var visibleRifles = rifles.Where(u => { var p = game.ViewCamera.WorldToViewportPoint(new Vector3(u.Position.x, .6f, u.Position.y)); return p.z > 0 && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1; }).ToArray();
-            Check(visibleRifles.Length >= 2, "Double-click setup contains multiple visible same-class troops");
+            Check(visibleRifles.Length == 2, "Double-click setup contains two visible rifles and one offscreen rifle");
             var click = ScreenPoint(visibleRifles[0]);
             game.ClickWorld(click); game.ClickWorld(click);
             Check(game.Selected.SetEquals(visibleRifles.Select(u => u.Id)),

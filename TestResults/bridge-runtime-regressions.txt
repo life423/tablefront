@@ -1,0 +1,6 @@
+VerifyExpandedArt: 35 checks passed
+VerifyExpandedControls: 36 checks passed
+VerifyExpandedHUD: 23 checks passed
+VerifyControlsTutorial: 59 checks passed
+VerifyControlGroups: 50 checks passed
+VerifyTutorialRecovery: 24 checks passed

@@ -30,7 +30,7 @@ PASS Help cancels an armed order
 PASS V recruits a paid Gunner from the same roster as the AI
 PASS B recruits paid Artillery
 PASS Existing control groups save, extend and recall the new unit classes
-PASS Double-click setup contains multiple visible same-class troops
+PASS Double-click setup contains two visible rifles and one offscreen rifle
 PASS Double-click selects visible troops of the same class without selecting offscreen units
 PASS Pointer positions outside the viewport cannot send world orders
 PASS Next battlefield starts a fresh match on the next level

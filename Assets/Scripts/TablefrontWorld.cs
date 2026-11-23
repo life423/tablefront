@@ -69,6 +69,7 @@ namespace Tablefront
         Material ink, ceramic, walnut, edge, brass, terrain, sand, stone, foliage, foliageLight, neutral, muzzle, steel, grassDry;
         TablefrontMiniatureArt miniatureArt;
         TablefrontLandmarkArt.Kit landmarkArt;
+        TablefrontBridgeArt bridgeArt;
         ReflectionProbe studioProbe;
         VolumeProfile studioProfile;
         Mesh ringMesh, selectionMesh, rockMesh;
@@ -82,8 +83,11 @@ namespace Tablefront
         float tutorialRadius = 1;
         bool tutorialTargetVisible;
         string tutorialLabelText = "";
-        AudioSource cueAudio, ambience;
+        AudioSource cueAudio, ambience, bridgeAudio;
         AudioClip scoutShot, lightShot, heavyShot, deathSound, recruitCue, captureCue, lostCue;
+        AudioClip bridgeWarningCue, bridgeMotorCue, bridgeDockCue;
+        TablefrontBridge audioBridge;
+        BridgePhase audioBridgePhase;
         float lightCooldown, heavyCooldown;
         Transform coverRoot;
         BattleSimulation coverSimulation;
@@ -266,6 +270,10 @@ namespace Tablefront
         {
             if (!built || sim == null) return;
             SetBattlefield(sim);
+            if (sim.MissionActive && bridgeArt == null)
+                bridgeArt = new TablefrontBridgeArt(transform, landmarkArt, walnut, steel, ink, ceramic, brass, factionBright);
+            if (bridgeArt != null) bridgeArt.Render(sim.MissionActive ? sim.Bridge : null, ReducedMotion);
+            RenderBridgeAudio(sim.MissionActive ? sim.Bridge : null);
             if (coverSimulation != sim) BuildCover(sim);
             present.Clear();
             float blend = Application.isPlaying && !ReducedMotion ? 1 - Mathf.Exp(-22 * Time.unscaledDeltaTime) : 1;
@@ -274,11 +282,14 @@ namespace Tablefront
                 if (!u.Alive) continue;
                 present.Add(u.Id);
                 if (!miniatures.TryGetValue(u.Id, out var model)) { model = CreateMiniature(u); miniatures.Add(u.Id, model); }
-                var goal = V3(u.Position, .055f);
+                bool riding = sim.MissionActive && sim.Bridge.IsRiding(u.Id) && bridgeArt != null;
+                var goal = riding ? bridgeArt.PassengerPosition(u.Position, sim.Bridge.AngleDegrees)
+                    : V3(u.Position, sim.MissionActive && bridgeArt != null ? bridgeArt.FloorAt(u.Position) : .055f);
                 var before = model.Root.transform.position;
-                model.Root.transform.position = Vector3.Lerp(before, goal, blend);
-                model.Root.transform.rotation = Quaternion.Slerp(model.Root.transform.rotation, Quaternion.Euler(0, u.Heading, 0), blend);
-                float movement = (before - goal).sqrMagnitude;
+                model.Root.transform.position = riding ? goal : Vector3.Lerp(before, goal, blend);
+                float heading = u.Heading + (riding ? sim.Bridge.AngleDegrees - bridgeArt.VisualAngle : 0);
+                model.Root.transform.rotation = riding ? Quaternion.Euler(0, heading, 0) : Quaternion.Slerp(model.Root.transform.rotation, Quaternion.Euler(0, heading, 0), blend);
+                float movement = riding ? 0 : (before - goal).sqrMagnitude;
                 if (model.Hull != null)
                 {
                     float gait = !ReducedMotion && movement > .0008f ? Mathf.Sin(sim.Elapsed * (u.Kind == UnitKind.Rifle ? 15 : 11) + u.Id) : 0;
@@ -308,7 +319,7 @@ namespace Tablefront
             foreach (var point in sim.Points)
             {
                 if (!pointViews.TryGetValue(point.Id, out var lm)) { lm = CreatePoint(point); pointViews.Add(point.Id, lm); }
-                lm.Root.transform.position = V3(point.Position, .025f);
+                lm.Root.transform.position = V3(point.Position, sim.MissionActive && Mathf.Abs(point.Position.x) < 3.5f ? TablefrontBridgeArt.DeckFloor : .025f);
                 var mat = point.Owner >= 0 ? faction[point.Owner] : neutral;
                 lm.Flag.sharedMaterial = mat; lm.Ring.sharedMaterial = point.Owner >= 0 ? factionBright[point.Owner] : neutral;
                 lm.Progress.gameObject.SetActive(point.CapturingTeam >= 0 && point.CaptureProgress > .01f);
@@ -317,6 +328,8 @@ namespace Tablefront
             }
             foreach (var army in sim.Armies)
             {
+                if (sim.MissionActive && army.Id == 2)
+                { if (headquarters.TryGetValue(army.Id, out var unused)) unused.Root.SetActive(false); continue; }
                 if (!headquarters.TryGetValue(army.Id, out var lm)) { lm = CreateHeadquarters(army); headquarters.Add(army.Id, lm); }
                 lm.Root.transform.position = V3(army.BasePosition, .02f);
                 lm.Root.SetActive(army.Alive);
@@ -749,6 +762,18 @@ namespace Tablefront
             tutorialTargetVisible = false;
             HoveredUnitId = -1;
             if (tutorialTargetRoot != null) tutorialTargetRoot.gameObject.SetActive(false);
+            if (bridgeArt != null) bridgeArt.Render(null, ReducedMotion);
+            audioBridge = null; if (bridgeAudio != null) bridgeAudio.Stop();
+        }
+
+        void RenderBridgeAudio(TablefrontBridge bridge)
+        {
+            if (bridge == null) { audioBridge = null; return; }
+            if (audioBridge != bridge) { audioBridge = bridge; audioBridgePhase = bridge.Phase; return; }
+            if (bridge.Phase == audioBridgePhase || bridgeAudio == null) return;
+            BridgePhase previousPhase = audioBridgePhase; audioBridgePhase = bridge.Phase;
+            AudioClip clip = bridge.Phase == BridgePhase.Warning ? bridgeWarningCue : bridge.Phase == BridgePhase.Moving ? bridgeMotorCue : previousPhase == BridgePhase.Moving ? bridgeDockCue : null;
+            if (clip != null) { bridgeAudio.clip = clip; bridgeAudio.Play(); }
         }
 
         void AudioSetup()
@@ -767,6 +792,10 @@ namespace Tablefront
             recruitCue = Chime("Reinforcements ready", new[] { 440f, 660f }, .075f);
             captureCue = Chime("Beacon secured", new[] { 523f, 659f, 784f }, .1f);
             lostCue = Chime("Beacon lost", new[] { 440f, 330f }, .12f);
+            bridgeAudio = gameObject.AddComponent<AudioSource>(); bridgeAudio.playOnAwake = false; bridgeAudio.spatialBlend = 0; bridgeAudio.volume = .18f;
+            bridgeWarningCue = Chime("Bridge warning bell", new[] { 392f, 294f }, .12f);
+            bridgeMotorCue = BridgeMotor();
+            bridgeDockCue = Synth("Bridge docking latch", .24f, 88, .28f);
             ambience = gameObject.AddComponent<AudioSource>(); ambience.playOnAwake = false; ambience.loop = true; ambience.spatialBlend = 0; ambience.volume = .035f;
             const int rate = 22050; var samples = new float[rate * 6]; var random = new System.Random(52); float brown = 0;
             for (var i = 0; i < samples.Length; i++) { brown = Mathf.Clamp((brown + ((float)random.NextDouble() * 2 - 1) * .025f) * .995f, -.2f, .2f); float fade = Mathf.Min(1, Mathf.Min(i / 110f, (samples.Length - 1 - i) / 110f)); samples[i] = (brown + Mathf.Sin(i * .0006f) * .018f) * fade; }
@@ -783,6 +812,20 @@ namespace Tablefront
                 data[i] = signal * Mathf.Exp(-p * 7) * fade * .7f;
             }
             var clip = AudioClip.Create(name, count, 1, rate, false); clip.SetData(data, 0); return clip;
+        }
+
+        static AudioClip BridgeMotor()
+        {
+            const int rate = 22050, count = rate * 2;
+            var samples = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                float t = i / (float)rate, p = i / (float)count;
+                float envelope = Mathf.Sin(Mathf.PI * p) * .26f;
+                samples[i] = (Mathf.Sin(t * 104 * Mathf.PI * 2) + Mathf.Sin(t * 157 * Mathf.PI * 2) * .23f) * envelope;
+            }
+            var clip = AudioClip.Create("Two-second bridge mechanism", count, 1, rate, false);
+            clip.SetData(samples, 0); return clip;
         }
 
         static AudioClip Chime(string name, float[] notes, float duration)
@@ -873,6 +916,7 @@ namespace Tablefront
             foreach (var t in ownedTextures) if (t != null) Destroy(t);
             if (scoutShot != null) Destroy(scoutShot); if (lightShot != null) Destroy(lightShot); if (heavyShot != null) Destroy(heavyShot); if (deathSound != null) Destroy(deathSound);
             if (recruitCue != null) Destroy(recruitCue); if (captureCue != null) Destroy(captureCue); if (lostCue != null) Destroy(lostCue);
+            if (bridgeWarningCue != null) Destroy(bridgeWarningCue); if (bridgeMotorCue != null) Destroy(bridgeMotorCue); if (bridgeDockCue != null) Destroy(bridgeDockCue);
             if (ambience != null && ambience.clip != null) Destroy(ambience.clip);
         }
     }

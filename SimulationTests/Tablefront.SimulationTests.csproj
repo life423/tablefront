@@ -5,6 +5,8 @@
     <Compile Include="../Runtime/BattleSimulation.cs" Link="BattleSimulation.cs" Condition="!Exists('../Assets/Scripts/BattleSimulation.cs')" />
     <Compile Include="../Assets/Scripts/TablefrontBattlefields.cs" Link="TablefrontBattlefields.cs" Condition="Exists('../Assets/Scripts/TablefrontBattlefields.cs')" />
     <Compile Include="../Runtime/TablefrontBattlefields.cs" Link="TablefrontBattlefields.cs" Condition="!Exists('../Assets/Scripts/TablefrontBattlefields.cs')" />
+    <Compile Include="../Assets/Scripts/TablefrontBridge.cs" Link="TablefrontBridge.cs" Condition="Exists('../Assets/Scripts/TablefrontBridge.cs')" />
+    <Compile Include="../Runtime/TablefrontBridge.cs" Link="TablefrontBridge.cs" Condition="!Exists('../Assets/Scripts/TablefrontBridge.cs')" />
     <Compile Include="VerifySimulation.cs" />
     <Compile Include="NeuralCommanderStub.cs" />
     <Reference Include="UnityEngine.CoreModule"><HintPath>C:/Program Files/Unity/Hub/Editor/6000.6.10f1/Editor/Data/Managed/UnityEngine/UnityEngine.CoreModule.dll</HintPath></Reference>
