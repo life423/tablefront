@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-11-23T01:25:44.5532869+00:00",
+  "version": "0.4.0",
+  "launchedFrom": "actual desktop Tablefront.lnk",
+  "installedPathCorrect": true,
+  "visibleWindow": true,
+  "responding": true,
+  "sceneInitialized": true,
+  "runtimeExceptionsOrShaderErrors": 0,
+  "gpu": "NVIDIA GeForce RTX 5070",
+  "nativeScreenVisuallyVerified": true,
+  "observedScreen": "Tutorial 3 of 6, Capture WEST; detailed miniatures, blended roads, new trees, HQs and sandbags visible",
+  "screenDimensions": "2560x1440",
+  "missingOrMagentaArtObserved": false,
+  "nativeGameplayInputSent": false,
+  "frameRateMeasured": false,
+  "editorClosed": true,
+  "trainingStarted": false
+}

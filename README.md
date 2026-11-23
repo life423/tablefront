@@ -2,14 +2,14 @@
 
 A Windows tabletop RTS made in Unity. Command a miniature army against two neural commanders, or watch all three fight through self-play tactics.
 
-The **0.3.2 controls playtest** adds StarCraft-style control groups to the mouse-first commands and separate six-task tutorial. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.3.2-preview.1/Tablefront-Setup-v0.3.2.exe) or read [controls and tutorial](Docs/CONTROLS_TUTORIAL.md). It also includes the [0.3.0 tactical improvements](Docs/TACTICAL_UPDATE.md). The stable release remains 0.2.1 while these changes receive human playtesting.
+The **0.4.0 visual playtest** develops a painted miniature-tabletop look with custom detailed models, articulated infantry, blended terrain, surface maps and captured studio reflections in URP. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.4.0-preview.1/Tablefront-Setup-v0.4.0.exe) or read the [visual update](Docs/PREMIUM_TABLETOP.md). It includes the StarCraft-style groups, mouse-first commands, separate six-task tutorial and [earlier tactical improvements](Docs/TACTICAL_UPDATE.md). The stable release remains 0.2.1 while these changes receive human playtesting.
 
-![Tablefront battlefield](Docs/Images/tablefront-battle.png)
+![Tablefront painted campaign board](Docs/Images/premium-battle-1280.png)
 
 ## Play
 
-1. [Download the 0.3.2 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.3.2-preview.1/Tablefront-Setup-v0.3.2.exe).
-2. Double-click **Tablefront-Setup-v0.3.2.exe** and choose **Install**.
+1. [Download the 0.4.0 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.4.0-preview.1/Tablefront-Setup-v0.4.0.exe).
+2. Double-click **Tablefront-Setup-v0.4.0.exe** and choose **Install**.
 3. Open **Tablefront** from the desktop icon or Start menu.
 4. Choose **Tutorial · Start here** to learn by playing. After completing it, choose **Play a battle** for a fresh match. **Play vs AI** and **Watch AI battle** are also available on the title screen.
 
@@ -19,7 +19,7 @@ Unity, the .NET SDK, an account, and an internet connection are not required to 
 
 **Click a blue unit** to select it, or use **Scouts**, **Rifles**, **Tanks** or **Select whole army** below the table. Then **click the ground to move** or **click an enemy to attack**. Keep troops inside a beacon's ring to capture it; units fire automatically when in range. Beacons earn credits and victory points. Reach **350 points**, or destroy both enemy headquarters.
 
-Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.3.2.
+Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.4.0 and retain the 0.3.2 group mapping.
 
 ## Controls
 
@@ -78,7 +78,7 @@ These results show improvement over those baselines, not expert RTS play or prov
 
 ## Graphics
 
-The high-quality desktop preset targets a **2560 × 1440 display**, with supersampling, MSAA, detailed tabletop textures, anisotropic filtering, and sharp overlay UI. It is intended for capable desktop GPUs; no measured frame-rate guarantee is provided. See the [release notes](RELEASE_NOTES.md) for the graphics configuration included in the release.
+The visual playtest keeps **Unity 6.6 / URP 17.6** and the existing native-display, supersampling, MSAA and sharp-overlay configuration. Its visible changes are custom shared meshes, surface-detail maps, continuous grass/earth routes, articulated miniature motion, detailed landmarks and a captured studio reflection environment. All art remains runtime-generated; it introduces no external asset purchases or new packages, and does not use ray tracing or baked GI. See the [visual update and verification](Docs/PREMIUM_TABLETOP.md). Native frame rate and VRAM have not been measured by the automated art checks.
 
 ## Edit or train
 

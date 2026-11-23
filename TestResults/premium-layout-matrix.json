@@ -1,0 +1,86 @@
+[
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "title",
+    "probe": "state=title; step=0; practice=False; size=1280x720; frame=7455; overflowing=",
+    "path": "Captures/premium-title-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=1280x720; frame=7614; overflowing=",
+    "path": "Captures/premium-battle-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=1280x720; frame=7771; overflowing=",
+    "path": "Captures/premium-tutorial4-1280.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "title",
+    "probe": "state=title; step=0; practice=False; size=1024x768; frame=7990; overflowing=",
+    "path": "Captures/premium-title-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=1024x768; frame=8146; overflowing=",
+    "path": "Captures/premium-battle-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=1024x768; frame=8300; overflowing=",
+    "path": "Captures/premium-tutorial4-1024.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "title",
+    "probe": "state=title; step=0; practice=False; size=2560x1440; frame=8521; overflowing=",
+    "path": "Captures/premium-title-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=2560x1440; frame=8673; overflowing=",
+    "path": "Captures/premium-battle-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=2560x1440; frame=8832; overflowing=",
+    "path": "Captures/premium-tutorial4-2560.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "title",
+    "probe": "state=title; step=0; practice=False; size=3440x1440; frame=9047; overflowing=",
+    "path": "Captures/premium-title-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=3440x1440; frame=9204; overflowing=",
+    "path": "Captures/premium-battle-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=3440x1440; frame=9360; overflowing=",
+    "path": "Captures/premium-tutorial4-3440.png"
+  }
+]

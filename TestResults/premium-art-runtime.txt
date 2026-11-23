@@ -1,0 +1,25 @@
+PASS Art replacement retains normal initial army counts
+PASS Every visible world renderer has a supported shader rather than a missing or pink error material
+PASS Visible tabletop art uses owned authored materials rather than Default-Material
+PASS Decorative miniatures and scenery introduce no physical colliders after deferred cleanup
+PASS Rendered shared meshes have nonempty geometry and finite nonnegative bounds
+PASS Readable world mesh positions remain finite
+PASS Combined and animated renderer world bounds remain finite
+PASS Normal-mapped materials actually bind their surface-detail texture
+PASS Normal-mapped visible geometry supplies normals, UVs and tangents
+PASS Enabled surface-mask variants bind their metallic/smoothness map
+PASS The studio reflection probe has produced an actual reflection texture
+PASS The reflection-probe influence volume covers the playable table center
+PASS Static scenery submits at most 64 material-combined renderers (observed 14)
+PASS Shared mesh/material/texture ownership stays bounded across three battle/tutorial restart cycles (meshes 186; rounds 186,186,186)
+PASS Restarting practice does not leave newly spawned decorative colliders
+PASS The premium battlefield still captures a beacon through actual occupation
+PASS The premium pennant changes to the actual capturing faction's enamel material
+PASS The capture-radius ring follows the same actual beacon ownership
+PASS Rifle movement still reaches mechanical cover through the detailed sandbag art
+PASS Visible cover rings match actual protection rather than visual scenery proximity
+PASS Live simulation movement produces visibly different articulated infantry poses at non-aliasing sample times
+PASS Live recon movement turns its wheel pivots
+PASS Reduced motion holds cosmetic limb and wheel poses stable while simulation steps continue
+PASS Reduced motion does not freeze or change mechanical troop movement
+PASS Fresh tutorial still starts safely after visual resource and animation checks

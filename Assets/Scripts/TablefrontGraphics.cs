@@ -17,6 +17,7 @@ namespace Tablefront
             QualitySettings.globalTextureMipmapLimit = 0;
             QualitySettings.lodBias = 4;
             QualitySettings.vSyncCount = 1;
+            QualitySettings.realtimeReflectionProbes = true;
             var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             if (!urp) return;
             urp.supportsHDR = true;

@@ -1,0 +1,11 @@
+{
+  "status": "completed",
+  "buildId": "build_664e00585e8d",
+  "result": "Succeeded",
+  "platform": "StandaloneWindows64",
+  "outputPath": "C:/Users/aiand/Documents/programming/lumen-run/Builds/TablefrontPremium/Tablefront.exe",
+  "totalSizeBytes": 107942620,
+  "buildTimeMs": 88132,
+  "totalErrors": 0,
+  "totalWarnings": 0
+}

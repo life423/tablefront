@@ -6,7 +6,7 @@
   #error OutputDirectory must be supplied.
 #endif
 #ifndef AppVersion
-  #define AppVersion "0.3.2"
+  #define AppVersion "0.4.0"
 #endif
 
 [Setup]
