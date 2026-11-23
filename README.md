@@ -2,46 +2,60 @@
 
 A Windows tabletop RTS made in Unity. Command a miniature army against two neural commanders, or watch all three fight through self-play tactics.
 
-The **0.3.0 tactical playtest** adds squads, combat feedback, recaps, a playable lesson and cover/role mechanics. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.3.0-preview.1/Tablefront-Setup-v0.3.0.exe) or read [changes and verification](Docs/TACTICAL_UPDATE.md). The stable download below remains 0.2.1 while the new tactics receive human playtesting.
+The **0.3.1 controls playtest** makes commanding mouse-first and adds a separate six-task tutorial. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.3.1-preview.1/Tablefront-Setup-v0.3.1.exe) or read [controls and tutorial](Docs/CONTROLS_TUTORIAL.md). It also includes the [0.3.0 tactical improvements](Docs/TACTICAL_UPDATE.md). The stable release remains 0.2.1 while these changes receive human playtesting.
 
 ![Tablefront battlefield](Docs/Images/tablefront-battle.png)
 
 ## Play
 
-1. [Download Tablefront for Windows](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe).
-2. Double-click **Tablefront-Setup-v0.2.1.exe** and choose **Install**.
+1. [Download the 0.3.1 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.3.1-preview.1/Tablefront-Setup-v0.3.1.exe).
+2. Double-click **Tablefront-Setup-v0.3.1.exe** and choose **Install**.
 3. Open **Tablefront** from the desktop icon or Start menu.
-4. Choose **Play vs AI** to command Cobalt, or **Watch AI battle** to spectate.
+4. Choose **Tutorial · Start here** to learn by playing. After completing it, choose **Play a battle** for a fresh match. **Play vs AI** and **Watch AI battle** are also available on the title screen.
 
 The installer includes all the game files and creates desktop and Start menu shortcuts by default. It installs for your Windows account without an administrator prompt. You can remove it through **Settings → Apps → Installed apps → Tablefront → Uninstall**.
 
 Unity, the .NET SDK, an account, and an internet connection are not required to play. The small launcher uses the .NET Framework included with Windows. A portable ZIP is also available on the [release page](https://github.com/life423/tablefront/releases/latest): extract it completely and launch **StartTablefront.exe**, keeping its adjacent files and folders together. The installer build instructions are in [Installer/README.md](Installer/README.md).
 
-Your six starting units are selected. **Right-click a beacon** to advance. Keep units inside its ring to capture it; units fire at nearby enemies automatically. Beacons earn credits and victory points. Reach **350 points**, or destroy both enemy headquarters.
+**Click a blue unit** to select it, or use **Scouts**, **Rifles**, **Tanks** or **Select whole army** below the table. Then **click the ground to move** or **click an enemy to attack**. Keep troops inside a beacon's ring to capture it; units fire automatically when in range. Beacons earn credits and victory points. Reach **350 points**, or destroy both enemy headquarters.
+
+Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.3.1.
 
 ## Controls
 
 | Input | Action |
 | --- | --- |
-| Left-click / drag a box | Select your units |
+| Left-click a blue unit / drag a box | Select your units |
+| Left-click ground / enemy with troops selected | Move in formation / attack that enemy |
+| Scouts / Rifles / Tanks buttons | Select that troop class |
+| Recruit buttons | Buy reinforcements at your HQ |
 | Shift + select | Add or remove units from the selection |
-| Right-click ground / enemy | Move in formation / focus fire |
-| Ctrl+A | Select your whole army |
-| 4 / 5 / 6 | Recall Alpha / Bravo / Charlie (0.3.0 preview) |
-| Ctrl+4 / Ctrl+5 / Ctrl+6 | Assign selected troops to a group (preview) |
-| 1 / 2 / 3 | Recruit Scout / Rifle / Tank at your HQ |
+| Right-click ground / enemy | Alternative move / attack |
+| Select whole army / Ctrl+A | Select your whole army |
+| 1 / 2 / 3 | Select Scouts / Rifles / Tanks; does not spend credits |
+| Z / X / C | Recruit Scout / Rifle / Tank at your HQ |
 | WASD / arrows | Pan the camera |
 | Mouse wheel | Zoom |
 | Q / E | Rotate the view |
 | Middle mouse drag | Pan with the mouse |
 | Home | Focus your HQ |
-| F | Focus the current HQ/beacon alert (preview) |
-| Tab | Hand your army to its neural commander / take command back |
-| Space / Escape | Pause |
-| F1 | Open Help |
+| F | Focus the current HQ/beacon alert |
+| Let AI play / Take control button | Explicitly hand over / reclaim command |
+| Tab / Shift+Tab | Focus the next / previous visible UI control |
+| Enter | Activate the focused button |
+| Space / Escape | Pause; Space activates a focused UI control instead |
+| Help / F1 | Open Help during a battle |
 | F11 | Toggle fullscreen |
 
 Scouts cost **55 credits**, rifles **85**, and tanks **170**. Recruitment shares a short cooldown; each army can field **26 units**. If your HQ falls, you can watch the remaining battle or restart. Switching away from the game pauses the match. Help includes volume and reduced-motion settings.
+
+Optional custom groups remain on **4/5/6** to recall and **Ctrl+4/5/6** to assign. You can play without shortcuts; **Help → Keyboard shortcuts** lists the advanced controls.
+
+## Tutorial
+
+Choose **Tutorial** on the title screen, **Start tutorial** in Help, or **Tutorial** while paused. Gold markers and one instruction at a time guide you through selecting troops, moving, capturing WEST, recruiting rifles, destroying a practice target and protecting rifles in cover. Each task waits for the action to happen in the real simulation.
+
+Practice has no opposing commander activity or score victory pressure. The attack target stays still and does not fire. **Show target** recenters the view; **Restart tutorial** starts the lesson over; **Exit tutorial** returns to the title. Finishing does not activate enemies on the practice table: **Play a battle** explicitly starts a fresh normal match. See the [tutorial guide](Docs/CONTROLS_TUTORIAL.md).
 
 ## Neural commanders
 

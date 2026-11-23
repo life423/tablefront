@@ -93,6 +93,8 @@ namespace Tablefront
         public bool Finished;
         /// <summary>Training harness sets this to true and supplies actions directly.</summary>
         public bool UseExternalAI;
+        /// <summary>Explicit teaching table only; ordinary matches and trainers keep normal victory rules.</summary>
+        public bool PracticeMode;
 
         readonly System.Random random;
         readonly System.Random[] policyRandom = new System.Random[3];
@@ -745,6 +747,7 @@ namespace Tablefront
 
         void CheckVictory()
         {
+            if (PracticeMode) return;
             int living = 0, survivor = -1, scoreWinner = -1;
             float highestScore = VictoryScore - .0001f;
             for (int i = 0; i < Armies.Count; i++)

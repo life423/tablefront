@@ -1,0 +1,254 @@
+[
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "title",
+    "probe": "state=title; step=0; practice=False; size=1280x720; frame=1926; overflowing=",
+    "path": "Captures/controls-title-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "help",
+    "probe": "state=help; step=0; practice=False; size=1280x720; frame=2086; overflowing=",
+    "path": "Captures/controls-help-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "shortcuts",
+    "probe": "state=shortcuts; step=0; practice=False; size=1280x720; frame=2243; overflowing=",
+    "path": "Captures/controls-shortcuts-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "tutorial0",
+    "probe": "state=tutorial0; step=0; practice=True; size=1280x720; frame=2402; overflowing=",
+    "path": "Captures/controls-tutorial0-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "tutorial3",
+    "probe": "state=tutorial3; step=3; practice=True; size=1280x720; frame=2557; overflowing=",
+    "path": "Captures/controls-tutorial3-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=1280x720; frame=2715; overflowing=",
+    "path": "Captures/controls-tutorial4-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "tutorial5",
+    "probe": "state=tutorial5; step=5; practice=True; size=1280x720; frame=2875; overflowing=",
+    "path": "Captures/controls-tutorial5-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "tutorial6",
+    "probe": "state=tutorial6; step=6; practice=True; size=1280x720; frame=3036; overflowing=",
+    "path": "Captures/controls-tutorial6-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=1280x720; frame=3197; overflowing=",
+    "path": "Captures/controls-battle-1280.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "title",
+    "probe": "state=title; step=0; practice=False; size=1024x768; frame=3424; overflowing=",
+    "path": "Captures/controls-title-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "help",
+    "probe": "state=help; step=0; practice=False; size=1024x768; frame=3582; overflowing=",
+    "path": "Captures/controls-help-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "shortcuts",
+    "probe": "state=shortcuts; step=0; practice=False; size=1024x768; frame=3738; overflowing=",
+    "path": "Captures/controls-shortcuts-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "tutorial0",
+    "probe": "state=tutorial0; step=0; practice=True; size=1024x768; frame=3895; overflowing=",
+    "path": "Captures/controls-tutorial0-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "tutorial3",
+    "probe": "state=tutorial3; step=3; practice=True; size=1024x768; frame=4051; overflowing=",
+    "path": "Captures/controls-tutorial3-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=1024x768; frame=4209; overflowing=",
+    "path": "Captures/controls-tutorial4-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "tutorial5",
+    "probe": "state=tutorial5; step=5; practice=True; size=1024x768; frame=4361; overflowing=",
+    "path": "Captures/controls-tutorial5-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "tutorial6",
+    "probe": "state=tutorial6; step=6; practice=True; size=1024x768; frame=4521; overflowing=",
+    "path": "Captures/controls-tutorial6-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=1024x768; frame=4681; overflowing=",
+    "path": "Captures/controls-battle-1024.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "title",
+    "probe": "state=title; step=0; practice=False; size=2560x1440; frame=4901; overflowing=",
+    "path": "Captures/controls-title-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "help",
+    "probe": "state=help; step=0; practice=False; size=2560x1440; frame=5055; overflowing=",
+    "path": "Captures/controls-help-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "shortcuts",
+    "probe": "state=shortcuts; step=0; practice=False; size=2560x1440; frame=5212; overflowing=",
+    "path": "Captures/controls-shortcuts-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "tutorial0",
+    "probe": "state=tutorial0; step=0; practice=True; size=2560x1440; frame=5372; overflowing=",
+    "path": "Captures/controls-tutorial0-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "tutorial3",
+    "probe": "state=tutorial3; step=3; practice=True; size=2560x1440; frame=5532; overflowing=",
+    "path": "Captures/controls-tutorial3-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=2560x1440; frame=5689; overflowing=",
+    "path": "Captures/controls-tutorial4-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "tutorial5",
+    "probe": "state=tutorial5; step=5; practice=True; size=2560x1440; frame=5842; overflowing=",
+    "path": "Captures/controls-tutorial5-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "tutorial6",
+    "probe": "state=tutorial6; step=6; practice=True; size=2560x1440; frame=6000; overflowing=",
+    "path": "Captures/controls-tutorial6-2560.png"
+  },
+  {
+    "width": 2560,
+    "height": 1440,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=2560x1440; frame=6162; overflowing=",
+    "path": "Captures/controls-battle-2560.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "title",
+    "probe": "state=title; step=0; practice=False; size=3440x1440; frame=6385; overflowing=",
+    "path": "Captures/controls-title-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "help",
+    "probe": "state=help; step=0; practice=False; size=3440x1440; frame=6544; overflowing=",
+    "path": "Captures/controls-help-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "shortcuts",
+    "probe": "state=shortcuts; step=0; practice=False; size=3440x1440; frame=6703; overflowing=",
+    "path": "Captures/controls-shortcuts-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "tutorial0",
+    "probe": "state=tutorial0; step=0; practice=True; size=3440x1440; frame=6861; overflowing=",
+    "path": "Captures/controls-tutorial0-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "tutorial3",
+    "probe": "state=tutorial3; step=3; practice=True; size=3440x1440; frame=7019; overflowing=",
+    "path": "Captures/controls-tutorial3-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "tutorial4",
+    "probe": "state=tutorial4; step=4; practice=True; size=3440x1440; frame=7177; overflowing=",
+    "path": "Captures/controls-tutorial4-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "tutorial5",
+    "probe": "state=tutorial5; step=5; practice=True; size=3440x1440; frame=7336; overflowing=",
+    "path": "Captures/controls-tutorial5-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "tutorial6",
+    "probe": "state=tutorial6; step=6; practice=True; size=3440x1440; frame=7497; overflowing=",
+    "path": "Captures/controls-tutorial6-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "battle",
+    "probe": "state=battle; step=0; practice=False; size=3440x1440; frame=7655; overflowing=",
+    "path": "Captures/controls-battle-3440.png"
+  }
+]

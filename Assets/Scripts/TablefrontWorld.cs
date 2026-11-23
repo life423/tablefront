@@ -67,6 +67,14 @@ namespace Tablefront
         Mesh ringMesh, coneMesh, rockMesh;
         Transform orderMarker;
         float orderLife;
+        Transform tutorialTargetRoot, tutorialTargetRing, tutorialTargetBacking, tutorialTargetPlate;
+        TextMeshPro tutorialTargetLabel;
+        LineRenderer tutorialTargetPointer;
+        Material tutorialGold;
+        Vector2 tutorialPosition;
+        float tutorialRadius = 1;
+        bool tutorialTargetVisible;
+        string tutorialLabelText = "";
         AudioSource cueAudio, ambience;
         AudioClip scoutShot, lightShot, heavyShot, deathSound, recruitCue, captureCue, lostCue;
         float lightCooldown, heavyCooldown;
@@ -332,6 +340,99 @@ namespace Tablefront
             }
             RenderOrders(sim, selected);
             foreach (var text in worldLabels) if (text != null) text.transform.rotation = view.transform.rotation;
+            RenderTutorialTarget();
+        }
+
+        /// <summary>One reusable, noninteractive world guide for the current tutorial task.</summary>
+        public void SetTutorialTarget(Vector2 position, float radius, string label, bool visible)
+        {
+            bool finite = !float.IsNaN(position.x) && !float.IsNaN(position.y) && !float.IsInfinity(position.x) && !float.IsInfinity(position.y)
+                && !float.IsNaN(radius) && !float.IsInfinity(radius);
+            tutorialTargetVisible = visible && finite;
+            if (tutorialTargetVisible)
+            {
+                tutorialPosition = position;
+                tutorialRadius = Mathf.Clamp(radius, .8f, 6f);
+                tutorialLabelText = string.IsNullOrWhiteSpace(label) ? "HERE" : label.Trim().ToUpperInvariant();
+                if (tutorialLabelText.Length > 24) tutorialLabelText = tutorialLabelText.Substring(0, 24);
+            }
+            if (built) RenderTutorialTarget();
+        }
+
+        void BuildTutorialTarget()
+        {
+            tutorialGold = Mat("Tutorial target gold", TablePalette.Gold, 0, 0, true);
+            tutorialTargetRoot = Group("Tutorial target guide", effectsRoot);
+            // Thin concentric outlines keep the gold legible without filling or obscuring the target.
+            tutorialTargetBacking = MeshPart("Tutorial target dark outline", tutorialTargetRoot, ringMesh, new Vector3(0, .045f, 0), Vector3.one, ink);
+            tutorialTargetRing = MeshPart("Tutorial target gold ring", tutorialTargetRoot, ringMesh, new Vector3(0, .055f, 0), Vector3.one, tutorialGold);
+            var labelObject = new GameObject("Tutorial target label");
+            labelObject.transform.SetParent(tutorialTargetRoot, false);
+            tutorialTargetLabel = labelObject.AddComponent<TextMeshPro>();
+            tutorialTargetLabel.text = "HERE";
+            tutorialTargetLabel.fontSize = 8.4f;
+            tutorialTargetLabel.fontStyle = FontStyles.Bold;
+            tutorialTargetLabel.characterSpacing = 1.6f;
+            tutorialTargetLabel.color = TablePalette.Gold;
+            tutorialTargetLabel.richText = false;
+            tutorialTargetLabel.alignment = TextAlignmentOptions.Center;
+            tutorialTargetLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            tutorialTargetLabel.rectTransform.sizeDelta = new Vector2(18, 2.2f);
+            tutorialTargetLabel.outlineColor = TablePalette.Ink;
+            tutorialTargetLabel.outlineWidth = .16f;
+            tutorialTargetLabel.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            tutorialTargetLabel.GetComponent<Renderer>().receiveShadows = false;
+            tutorialTargetPlate = Box("Tutorial target matte label", labelObject.transform, new Vector3(0, 0, .065f), new Vector3(3, .7f, .035f), ink);
+            tutorialTargetPlate.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
+            tutorialTargetPlate.GetComponent<Renderer>().receiveShadows = false;
+            var pointerObject = new GameObject("Tutorial target pointer");
+            pointerObject.transform.SetParent(tutorialTargetRoot, false);
+            tutorialTargetPointer = pointerObject.AddComponent<LineRenderer>();
+            tutorialTargetPointer.sharedMaterial = tutorialGold;
+            tutorialTargetPointer.useWorldSpace = true;
+            tutorialTargetPointer.positionCount = 5;
+            tutorialTargetPointer.startWidth = tutorialTargetPointer.endWidth = .085f;
+            tutorialTargetPointer.numCapVertices = 2;
+            tutorialTargetPointer.numCornerVertices = 2;
+            tutorialTargetPointer.shadowCastingMode = ShadowCastingMode.Off;
+            tutorialTargetPointer.receiveShadows = false;
+            tutorialTargetRoot.gameObject.SetActive(false);
+        }
+
+        void RenderTutorialTarget()
+        {
+            if (tutorialTargetRoot == null) return;
+            bool visible = tutorialTargetVisible && view != null;
+            tutorialTargetRoot.gameObject.SetActive(visible);
+            if (!visible) return;
+            tutorialTargetRoot.position = V3(tutorialPosition);
+            float pulse = ReducedMotion ? 1 : 1 + .025f * Mathf.Sin(Time.unscaledTime * 3);
+            tutorialTargetRing.localScale = Vector3.one * (tutorialRadius * pulse);
+            tutorialTargetBacking.localScale = Vector3.one * (tutorialRadius * pulse * 1.1f);
+            if (tutorialTargetLabel.text != tutorialLabelText)
+            {
+                tutorialTargetLabel.text = tutorialLabelText;
+                tutorialTargetLabel.ForceMeshUpdate(true);
+                var bounds = tutorialTargetLabel.textBounds;
+                tutorialTargetPlate.localPosition = new Vector3(bounds.center.x, bounds.center.y, .065f);
+                tutorialTargetPlate.localScale = new Vector3(Mathf.Max(1.4f, bounds.size.x + .5f), Mathf.Max(.6f, bounds.size.y + .26f), .035f);
+            }
+            Vector3 right = view.transform.right;
+            // The coach sits on the right. Keep the placard beside the target, away from unit faces.
+            float side = view.WorldToViewportPoint(V3(tutorialPosition)).x < .25f ? 1 : -1;
+            Vector3 outward = right * side;
+            float halfPlate = tutorialTargetPlate.localScale.x * .5f;
+            Vector3 labelPosition = V3(tutorialPosition, 1.8f) + outward * (tutorialRadius + halfPlate + .8f);
+            tutorialTargetLabel.transform.SetPositionAndRotation(labelPosition, view.transform.rotation);
+            Vector3 start = labelPosition - outward * halfPlate;
+            Vector3 end = V3(tutorialPosition, .12f) + outward * tutorialRadius;
+            Vector3 direction = (end - start).normalized;
+            Vector3 wing = view.transform.up * .25f;
+            tutorialTargetPointer.SetPosition(0, start);
+            tutorialTargetPointer.SetPosition(1, end);
+            tutorialTargetPointer.SetPosition(2, end - direction * .5f + wing);
+            tutorialTargetPointer.SetPosition(3, end);
+            tutorialTargetPointer.SetPosition(4, end - direction * .5f - wing);
         }
 
         void BuildCover(BattleSimulation sim)
@@ -551,6 +652,7 @@ namespace Tablefront
                 effects[i] = new Effect { Trace = line, Impact = impact, Chip = chip };
             }
             orderMarker = MeshPart("Move command marker", effectsRoot, ringMesh, Vector3.zero, Vector3.one, factionBright[0]); orderMarker.gameObject.SetActive(false);
+            BuildTutorialTarget();
             for (int i = 0; i < orderGuides.Length; i++)
             {
                 var go = new GameObject("Selected force order " + (i + 1)); go.transform.SetParent(effectsRoot, false);
@@ -679,6 +781,8 @@ namespace Tablefront
             coverRoot = null; coverSimulation = null;
             lightCooldown = heavyCooldown = 0;
             orderLife = 0; if (orderMarker != null) orderMarker.gameObject.SetActive(false);
+            tutorialTargetVisible = false;
+            if (tutorialTargetRoot != null) tutorialTargetRoot.gameObject.SetActive(false);
         }
 
         void AudioSetup()

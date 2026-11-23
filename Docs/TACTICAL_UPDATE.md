@@ -2,6 +2,8 @@
 
 November 22, 2026. The user approved implementing all five fun improvements. The previous release is preserved at `f30e1c4`; work is on `feature/tablefront-tactical-update`. AI training and CudaRL integration remain paused. This is a playable first pass, not a claim of measured human fun or commercial readiness.
 
+**Historical 0.3.0 record:** the later [0.3.1 controls/tutorial update](CONTROLS_TUTORIAL.md) replaces the primary group buttons, changes 1/2/3 to class selection and Z/X/C to recruitment, and replaces the four-step live-match lesson with separate six-task practice. The descriptions and results below document 0.3.0 rather than the current controls.
+
 ## The five changes
 
 1. **Separate forces.** Alpha/Bravo/Charlie initially contain scouts/rifles/tanks. Recall with **4/5/6** or labeled buttons. Assign selected troops with **Ctrl+4/5/6**, or **Assign selected…** and a Set button. Reinforcements join their class group until customized; dead members are removed. Selected destinations persist through a fixed eight-guide pool. Recruitment stays on **1/2/3**.

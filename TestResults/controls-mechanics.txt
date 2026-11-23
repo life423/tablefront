@@ -1,0 +1,60 @@
+Exact Unity-math mechanics verification (CoreModule.dll; no shim, no learned-policy claims)
+PASS initial field has 3 armies, 18 miniatures, 3 control points
+PASS equal initial army counts
+PASS equal initial health and credits
+PASS fresh match reset state
+PASS human and spectator ownership
+PASS Scout recruitment succeeds with full cost available
+PASS Scout recruitment pays exact cost and creates one troop
+PASS Scout recruitment cooldown blocks repeat purchase
+PASS Rifle recruitment succeeds with full cost available
+PASS Rifle recruitment pays exact cost and creates one troop
+PASS Rifle recruitment cooldown blocks repeat purchase
+PASS Tank recruitment succeeds with full cost available
+PASS Tank recruitment pays exact cost and creates one troop
+PASS Tank recruitment cooldown blocks repeat purchase
+PASS invalid recruits rejected
+PASS unaffordable purchase rejected
+PASS passive income uses shared six credits per second
+PASS unit cap26 enforced
+PASS movement responds to issued destination
+PASS NaN order rejected
+PASS infinite order rejected
+PASS destinations clamped inside board
+PASS movement and separation remain inside board
+PASS physical occupation captures a control point
+PASS controlled point adds score and extra income
+PASS enemy occupation contests a point
+PASS contested point awards no victory score
+PASS actual weapon resolution damages opposing troop
+PASS lethal damage removes dead troop
+PASS neural action 0 orders formation to matching point
+PASS neural action 1 orders formation to matching point
+PASS neural action 2 orders formation to matching point
+PASS neural HQ action 3 fires at correct enemy headquarters
+PASS HQ elimination removes army and releases territory for action 3
+PASS neural HQ action 4 fires at correct enemy headquarters
+PASS HQ elimination removes army and releases territory for action 4
+PASS neural defend action orders home formation
+PASS neural recruit action 6 respects shared purchase rules
+PASS neural recruit action 7 respects shared purchase rules
+PASS neural recruit action 8 respects shared purchase rules
+PASS neural hold action leaves current orders unchanged
+PASS neural dimensions40 observations10 actions
+PASS all observation components finite and normalized
+PASS own army feature indices match trainer contract
+PASS owner flags and signed capture indices match trainer contract
+PASS invalid observer has safe zero vector
+PASS 350score produces victory
+PASS finished simulation freezes
+PASS last headquarters produces victory
+PASS invalid time deltas do not corrupt state
+PASS seeded exact simulation with identical strategic actions is deterministic
+PASS deterministic army score and HQ damage
+PASS 120second external-actions soak contains real combat
+PASS soak maintains finite bounded troop positions
+PASS soak maintains army caps and nonnegative credits
+PASS soak observations remain finite
+PASS new match cleanly resets spent, contested, and damaged run state
+Throughput: 4800 fixed .05s steps in 0.068s = 70562 steps/s; combat events 444; final unit count 24
+PASS: 57 checks

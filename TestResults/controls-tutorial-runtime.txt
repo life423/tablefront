@@ -1,0 +1,59 @@
+PASS Title Tutorial action opens a dedicated practice session
+PASS Tutorial explicitly disables victory pressure and opposing strategic commanders
+PASS Tutorial begins with an actual selection task
+PASS Early recruitment cannot fill the army and block the required rifle lesson
+PASS Incomplete lesson cannot mark completion or launch a match
+PASS An unselected force cannot bypass the selection task with an order
+PASS Practice remains playable beyond the normal score victory threshold
+PASS One left click selects a friendly miniature through actual input
+PASS Selecting a real friendly advances the first tutorial task
+PASS One left click on open ground gives a movement order
+PASS The movement lesson waits for actual arrival rather than merely accepting an order
+PASS Actual movement to the marked location completes the movement lesson
+PASS Tutorial movement completion corresponds to a physically arrived friendly
+PASS Clicking the beacon does not substitute for capturing it
+PASS Beacon task completes through normal movement and capture rules
+PASS Recruiting the wrong class does not bypass the rifle recruitment task
+PASS X deploys a paid rifle and advances the recruitment task
+PASS Tutorial recruitment uses the game's actual supply cost
+PASS Attack task presents a live marked enemy target
+PASS One left click on an enemy issues a real attack order
+PASS Attack task waits for actual target destruction
+PASS Normal combat destroys the marked enemy before advancing the attack task
+PASS 1 selects scouts instead of unexpectedly spending supplies
+PASS A scout in cover cannot bypass the rifle cover lesson
+PASS 2 selects the rifle force
+PASS Cover task waits for actual rifle protection
+PASS Moving a rifle into mechanical cover completes the six-task tutorial
+PASS Completing tasks does not silently start an enemy attack
+PASS Finishing explicitly records tutorial completion
+PASS Play a battle leaves practice mode for a real player match
+PASS The live battle starts fresh with the normal army, score and opposing commanders
+PASS Restart during a tutorial restarts practice rather than launching a live battle
+PASS Exit tutorial returns safely to the title
+PASS Tab navigation cannot accidentally hand the player's army to AI
+PASS Tab gives visible UI controls keyboard focus
+PASS Shift+Tab reverses UI focus without changing commander mode
+PASS Normal 1 selects the scout class
+PASS Normal 2 selects the rifle class
+PASS Normal 3 selects the tank class
+PASS Labeled Scouts button selects its own class without shortcuts
+PASS Labeled Rifles button selects its own class without shortcuts
+PASS Labeled Tanks button selects its own class without shortcuts
+PASS Labeled whole-army button selects all friendly troops
+PASS Class selection never recruits or spends supplies
+PASS Z recruits the labeled Scout class
+PASS X recruits the labeled Rifle class
+PASS C recruits the labeled Tank class
+PASS Visible rifle recruitment action is enabled when affordable and ready
+PASS Labeled Recruit Rifles action deploys a squad without a keyboard shortcut
+PASS An empty selection cannot accidentally command an army
+PASS Single-click selection remains exact in a normal battle
+PASS Left-click destination moves the selected miniature and retains selection
+PASS Moving does not deselect the commanded force
+PASS Enemy click targets an opponent without requiring a different mouse button
+PASS Existing right-click movement remains available as a secondary control
+PASS Dragging selects the boxed friendly force instead of sending a ground order
+PASS Pause suppresses smart-click world commands
+PASS Ctrl+A remains a discoverable all-army shortcut
+PASS Normal matches still use normal victory rules outside the tutorial

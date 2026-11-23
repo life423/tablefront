@@ -1,6 +1,6 @@
 # Windows installer
 
-The tactical preview includes **Tablefront-Setup-v0.3.0.exe**, a single Windows installer. It installs the complete x64 Unity player to `%LOCALAPPDATA%\Programs\Tablefront`, with desktop and Start menu shortcuts selected by default and an entry in Windows Installed apps. It needs no administrator access and never installs Unity or the .NET SDK.
+The controls/tutorial preview uses **Tablefront-Setup-v0.3.1.exe**, a single Windows installer. It packages the mouse-first command flow and separate six-task practice mode described in the [controls guide](../Docs/CONTROLS_TUTORIAL.md). It installs the complete x64 Unity player to `%LOCALAPPDATA%\Programs\Tablefront`, with desktop and Start menu shortcuts selected by default and an entry in Windows Installed apps. It needs no administrator access and never installs Unity or the .NET SDK.
 
 Both shortcuts, and the optional **Play Tablefront** action on the finish page, launch **StartTablefront.exe**. Do not retarget them to `Tablefront.exe`: the launcher supplies the explicit Windows application identity required by the [startup fix](../Docs/STARTUP_FIX.md).
 
@@ -12,14 +12,20 @@ Use [Inno Setup 7](https://jrsoftware.org/inno-setup/downloads) or a compatible 
 
 ```powershell
 .\Tools\BuildLauncher.ps1 -BuildDirectory 'C:\Builds\Tablefront'
-.\Installer\BuildInstaller.ps1 -BuildDirectory 'C:\Builds\Tablefront' -OutputDirectory 'C:\Releases' -Version '0.3.0'
+.\Installer\BuildInstaller.ps1 -BuildDirectory 'C:\Builds\Tablefront' -OutputDirectory 'C:\Releases' -Version '0.3.1'
 ```
 
-The compiler is a developer tool only. Players need only the resulting setup EXE. The script requires every runtime folder and excludes Unity's backup directory, build provenance and debug symbols. `AppId` in `Tablefront.iss` must stay stable for future upgrades. Increase the version and rebuild the installer when the game changes. The launcher startup fix is preserved in 0.3.0.
+The compiler is a developer tool only. Players need only the resulting setup EXE. The script requires every runtime folder and excludes Unity's backup directory, build provenance and debug symbols. `AppId` in `Tablefront.iss` must stay stable for future upgrades. Increase the version and rebuild the installer when the game changes. The default version is **0.3.1**, and the launcher startup fix is preserved.
 
 ## Verification
 
+The 0.3.1 [Windows player build](../TestResults/controls-build-report.json) succeeded with zero errors and warnings. The [0.3.0 to 0.3.1 upgrade](../TestResults/controls-installer-verification.json) completed successfully, all **190 installed payload hashes** matched, registration displayed **0.3.1**, and desktop/Start menu shortcuts targeted **StartTablefront.exe** with the correct working directory. Silent Setup did not launch the game. Opening the actual desktop shortcut then produced a responding native window with completed scene initialization and zero runtime exceptions or shader errors; a read-only screenshot showed the tutorial's first task. No native gameplay input was sent. See [native startup](../TestResults/controls-native-startup.json). The user installation was preserved and upgraded; it was not uninstalled during these checks. Historical install/reinstall/uninstall verification follows separately.
+
+### Historical 0.3.0 upgrade
+
 The **0.2.1→0.3.0 upgrade** succeeded, all190 installed payload hashes matched the new build, registration displayed0.3.0 and both desktop/Start menu links targetedStartTablefront.exe. Launching the actual desktop shortcut produced a responding native window, completed scene initialization with no runtime exceptions, and the new title menu was visually inspected. No native gameplay input was sent. See [upgrade evidence](../TestResults/tactical-installer-verification.json) and [native startup](../TestResults/tactical-native-startup.json). The following preserves the original installer lifecycle verification; the user's installed game was not uninstalled during upgrade testing.
+
+### Historical 0.2.1 lifecycle
 
 Verified on November 22, 2026 using Inno Setup 7.1.1 x64:
 
