@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "buildId": "build_764d9c4c5a53",
+  "result": "Succeeded",
+  "platform": "StandaloneWindows64",
+  "outputPath": "C:/Users/aiand/Documents/programming/lumen-run/Builds/TablefrontTactical/Tablefront.exe",
+  "totalSizeBytes": 107313676,
+  "buildTimeMs": 9875,
+  "buildStartedAt": "2026-11-23T00:03:41.1842651Z",
+  "buildEndedAt": "2026-11-23T00:03:51.0594941Z",
+  "totalWarnings": 0,
+  "totalErrors": 0,
+  "errors": [],
+  "warnings": []
+}

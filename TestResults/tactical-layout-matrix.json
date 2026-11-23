@@ -1,0 +1,65 @@
+[
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "tutorial-done",
+    "setup": "state=tutorial-done; size=1280x720; frame=2899; elapsed=7.100009; overflowing=",
+    "capture": "Captures/tactical-tutorial-done-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "assignment",
+    "setup": "state=assignment; size=1280x720; frame=3059; elapsed=6.700007; overflowing=",
+    "capture": "Captures/tactical-assignment-1280.png"
+  },
+  {
+    "width": 1280,
+    "height": 720,
+    "state": "busy",
+    "setup": "state=busy; size=1280x720; frame=3217; elapsed=6.700007; overflowing=",
+    "capture": "Captures/tactical-busy-1280.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "battle",
+    "setup": "state=battle; size=1024x768; frame=3439; elapsed=6.700007; overflowing=",
+    "capture": "Captures/tactical-battle-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "alert",
+    "setup": "state=alert; size=1024x768; frame=3611; elapsed=6.800008; overflowing=",
+    "capture": "Captures/tactical-alert-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "help",
+    "setup": "state=help; size=1024x768; frame=3777; elapsed=6.500007; overflowing=",
+    "capture": "Captures/tactical-help-1024.png"
+  },
+  {
+    "width": 1024,
+    "height": 768,
+    "state": "draw",
+    "setup": "state=draw; size=1024x768; frame=3932; elapsed=6.550007; overflowing=",
+    "capture": "Captures/tactical-draw-1024.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "battle",
+    "setup": "state=battle; size=3440x1440; frame=4146; elapsed=6.700007; overflowing=",
+    "capture": "Captures/tactical-battle-3440.png"
+  },
+  {
+    "width": 3440,
+    "height": 1440,
+    "state": "tutorial",
+    "setup": "state=tutorial; size=3440x1440; frame=4302; elapsed=0.2; overflowing=",
+    "capture": "Captures/tactical-tutorial-3440.png"
+  }
+]

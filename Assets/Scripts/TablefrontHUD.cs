@@ -22,7 +22,14 @@ namespace Tablefront
         UnityEngine.UI.Button[] recruit = new UnityEngine.UI.Button[3];
         TextMeshProUGUI[] recruitText = new TextMeshProUGUI[3];
         UnityEngine.UI.Button commanderButton, resumeButton, restartButton, playButton, helpClose;
-        TextMeshProUGUI speedText, recruitStatus;
+        TextMeshProUGUI speedText, recruitStatus, orderText, roleText;
+        UnityEngine.UI.Button[] squadButtons = new UnityEngine.UI.Button[3];
+        TextMeshProUGUI[] squadText = new TextMeshProUGUI[3];
+        UnityEngine.UI.Button assignSquadButton, alertButton, tutorialDone, tutorialSkip;
+        TextMeshProUGUI assignSquadText, alertText, tutorialProgress, tutorialTitle, tutorialInstruction;
+        RectTransform tutorialCard;
+        bool assigningSquad;
+        readonly string[] squadNames = { "Alpha", "Bravo", "Charlie" };
         UnityEngine.UI.Slider volume;
         UnityEngine.UI.Toggle reduced;
         RectTransform commandSection, spectatorSection;
@@ -63,6 +70,7 @@ namespace Tablefront
             }
             BuildTitle();
             BuildHud();
+            BuildTutorial();
             BuildModal();
             BuildHelp();
             selection = Box("Selection rectangle", canvasRect, WithAlpha(TablePalette.Team(0), .12f), false);
@@ -80,22 +88,24 @@ namespace Tablefront
             title = Container("Title", canvasRect); Stretch(title);
             titleGroup = title.gameObject.AddComponent<CanvasGroup>();
             var card = Box("Title card", title, WithAlpha(TablePalette.Ink, .96f), true);
-            Anchor(card, new Vector2(0, .5f), new Vector2(0, .5f), new Vector2(0, .5f), new Vector2(48, 0), new Vector2(532, 696));
+            Anchor(card, new Vector2(0, .5f), new Vector2(0, .5f), new Vector2(0, .5f), new Vector2(48, 0), new Vector2(532, 740));
             var accent = Box("Gold rule", card, TablePalette.Gold); Top(accent, 36, 36, 74, 4);
-            Label(card, "NEURAL COMMANDERS  /  PPO", 15, TablePalette.Gold, new Vector2(36, -65), new Vector2(460, 32), FontStyles.Bold, 1.6f);
+            Label(card, "MINIATURE ARMIES / REAL-TIME TACTICS", 15, TablePalette.Gold, new Vector2(36, -65), new Vector2(460, 32), FontStyles.Bold, 1.1f);
             Label(card, "TABLE\nFRONT", 76, TablePalette.Text, new Vector2(30, -109), new Vector2(470, 178), FontStyles.Bold, -2f);
             Label(card, "THE WAR ROOM IS YOURS", 16, TablePalette.Muted, new Vector2(36, -293), new Vector2(460, 30), FontStyles.Bold, 1.7f);
-            var intro = Label(card, "Command the blue army. Capture the beacons, grow your force, and outthink two neural commanders trained through self-play.", 22, TablePalette.Text, new Vector2(36, -345), new Vector2(454, 112));
+            var intro = Label(card, "Command the blue army. Split your forces, seize three beacons, and turn the battle with one good flank.", 22, TablePalette.Text, new Vector2(36, -337), new Vector2(454, 90));
             intro.textWrappingMode = TextWrappingModes.Normal;
             playButton = Button(card, "Play vs AI", () => game.StartBattle(false), true);
-            Top(playButton.GetComponent<RectTransform>(), 36, 478, 460, 60);
+            Top(playButton.GetComponent<RectTransform>(), 36, 448, 460, 58);
+            var learn = Button(card, "Learn to command", game.StartTutorial);
+            Top(learn.GetComponent<RectTransform>(), 36, 518, 460, 52);
             var watch = Button(card, "Watch AI battle", () => game.StartBattle(true));
-            Top(watch.GetComponent<RectTransform>(), 36, 550, 460, 54);
+            Top(watch.GetComponent<RectTransform>(), 36, 582, 460, 48);
             var helpButton = Button(card, "How to play", game.ToggleHelp);
-            Top(helpButton.GetComponent<RectTransform>(), 36, 620, 280, 44);
+            Top(helpButton.GetComponent<RectTransform>(), 36, 650, 280, 48);
             var quit = Button(card, "Exit", game.ExitGame);
-            Top(quit.GetComponent<RectTransform>(), 328, 620, 168, 44);
-            var policyTag = NeuralCommander.Available ? "PPO SELF-PLAY  /  " + NeuralCommander.TrainingEpisodes.ToString("N0") + " TRAINING MATCHES  /  OFFLINE" : "NEURAL POLICY UNAVAILABLE";
+            Top(quit.GetComponent<RectTransform>(), 328, 650, 168, 48);
+            var policyTag = NeuralCommander.Available ? "THREE ARMIES  /  NEURAL OPPONENTS  /  OFFLINE" : "NEURAL POLICY UNAVAILABLE";
             var tag = Label(title, policyTag, 14, TablePalette.Text, Vector2.zero, new Vector2(850, 28), FontStyles.Bold, 1.2f);
             Anchor(tag.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0), new Vector2(-36, 28), new Vector2(850, 28));
             tag.alignment = TextAlignmentOptions.Right;
@@ -133,24 +143,48 @@ namespace Tablefront
             var tips = Button(row, "Help", game.ToggleHelp); LayoutItem(tips.gameObject, 82, 52);
 
             notice = Label(hud, "", 21, TablePalette.Text, Vector2.zero, new Vector2(900, 42), FontStyles.Bold);
-            Anchor(notice.rectTransform, new Vector2(.5f, 1), new Vector2(.5f, 1), new Vector2(.5f, 1), new Vector2(0, -139), new Vector2(900, 42));
+            Anchor(notice.rectTransform, new Vector2(.5f, 0), new Vector2(.5f, 0), new Vector2(.5f, 0), new Vector2(0, 256), new Vector2(900, 42));
             notice.alignment = TextAlignmentOptions.Center;
             var noticeShadow = notice.gameObject.AddComponent<UnityEngine.UI.Shadow>();
             noticeShadow.effectColor = TablePalette.Ink;
             noticeShadow.effectDistance = new Vector2(1, -2);
 
             var bottom = Box("Command deck", hud, WithAlpha(TablePalette.Ink, .97f), true);
-            Anchor(bottom, Vector2.zero, new Vector2(1, 0), new Vector2(.5f, 0), new Vector2(0, 20), new Vector2(-40, 170));
+            Anchor(bottom, Vector2.zero, new Vector2(1, 0), new Vector2(.5f, 0), new Vector2(0, 20), new Vector2(-40, 226));
             commandSection = Container("Player commands", bottom); Stretch(commandSection);
-            var selected = Container("Selection", commandSection); Fraction(selected, 0, .285f, 22, 18);
-            Label(selected, "SELECTED FORCE", 14, TablePalette.Gold, new Vector2(0, 0), new Vector2(350, 24), FontStyles.Bold, 1.2f);
-            selectionText = Label(selected, "", 21, TablePalette.Text, new Vector2(0, -31), new Vector2(370, 52));
-            var selectButton = Button(selected, "Select all  ·  Ctrl+A", game.SelectAll);
-            Anchor(selectButton.GetComponent<RectTransform>(), Vector2.zero, new Vector2(1, 0), Vector2.zero, Vector2.zero, new Vector2(0, 40));
-            var build = Container("Reinforcements", commandSection); Fraction(build, .30f, .755f, 10, 18);
+            var selected = Container("Selection", commandSection); Fraction(selected, 0, .38f, 18, 16);
+            selectionText = Label(selected, "", 20, TablePalette.Text, Vector2.zero, new Vector2(0, 30), FontStyles.Bold);
+            SpanTop(selectionText.rectTransform, 0, 30);
+            orderText = Label(selected, "", 17, TablePalette.Gold, new Vector2(0, -32), new Vector2(0, 25));
+            SpanTop(orderText.rectTransform, 32, 25);
+            roleText = Label(selected, "", 16, TablePalette.Muted, new Vector2(0, -60), new Vector2(0, 40));
+            SpanTop(roleText.rectTransform, 60, 40);
+            var squadRow = Container("Squad selection", selected); SpanTop(squadRow, 101, 44);
+            var squadLayout = squadRow.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            squadLayout.spacing = 6; squadLayout.childControlWidth = squadLayout.childControlHeight = true;
+            squadLayout.childForceExpandWidth = squadLayout.childForceExpandHeight = true;
+            for (int i = 0; i < 3; i++)
+            {
+                int slot = i;
+                squadButtons[i] = Button(squadRow, squadNames[i], () => UseSquad(slot));
+                squadText[i] = squadButtons[i].GetComponentInChildren<TextMeshProUGUI>();
+                squadText[i].fontSize = 18;
+                LayoutItem(squadButtons[i].gameObject, 140, 44);
+            }
+            var selectionActions = Container("Selection actions", selected); SpanTop(selectionActions, 152, 44);
+            var actionLayout = selectionActions.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            actionLayout.spacing = 8; actionLayout.childControlWidth = actionLayout.childControlHeight = true;
+            actionLayout.childForceExpandWidth = actionLayout.childForceExpandHeight = true;
+            var selectButton = Button(selectionActions, "All · Ctrl+A", game.SelectAll);
+            selectButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 17;
+            LayoutItem(selectButton.gameObject, 140, 44);
+            assignSquadButton = Button(selectionActions, "Assign selected…", () => { assigningSquad = !assigningSquad; Refresh(); });
+            assignSquadText = assignSquadButton.GetComponentInChildren<TextMeshProUGUI>(); assignSquadText.fontSize = 17;
+            LayoutItem(assignSquadButton.gameObject, 180, 44);
+            var build = Container("Reinforcements", commandSection); Fraction(build, .395f, .775f, 10, 16);
             recruitStatus = Label(build, "REINFORCEMENTS  /  AT YOUR HQ", 14, TablePalette.Gold, new Vector2(0, 0), new Vector2(580, 24), FontStyles.Bold, 1.2f);
             var recruits = Container("Recruitment row", build);
-            Anchor(recruits, Vector2.zero, new Vector2(1, 0), Vector2.zero, Vector2.zero, new Vector2(0, 94));
+            Anchor(recruits, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, 1), new Vector2(0, -40), new Vector2(0, 156));
             var recruitsLayout = recruits.gameObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
             recruitsLayout.spacing = 10; recruitsLayout.childControlWidth = true; recruitsLayout.childControlHeight = true;
             recruitsLayout.childForceExpandWidth = true; recruitsLayout.childForceExpandHeight = true;
@@ -159,15 +193,28 @@ namespace Tablefront
                 UnitKind kind = (UnitKind)i;
                 recruit[i] = Button(recruits, "", () => game.Recruit(kind));
                 recruitText[i] = recruit[i].GetComponentInChildren<TextMeshProUGUI>();
-                recruitText[i].fontSize = 20;
-                LayoutItem(recruit[i].gameObject, 135, 94);
+                recruitText[i].fontSize = 21;
+                LayoutItem(recruit[i].gameObject, 135, 156);
             }
-            var actions = Container("Commander", commandSection); Fraction(actions, .775f, 1f, 18, 18);
+            var actions = Container("Commander", commandSection); Fraction(actions, .795f, 1f, 14, 16);
             commanderText = Label(actions, "", 14, TablePalette.Muted, new Vector2(0, 0), new Vector2(350, 26), FontStyles.Bold);
             commanderButton = Button(actions, "AI command  ·  Tab", game.ToggleCommander);
-            Anchor(commanderButton.GetComponent<RectTransform>(), new Vector2(0, 0), new Vector2(1, 0), Vector2.zero, new Vector2(0, 51), new Vector2(0, 43));
+            commanderButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 18;
+            Anchor(commanderButton.GetComponent<RectTransform>(), new Vector2(0, 0), new Vector2(1, 0), Vector2.zero, new Vector2(0, 60), new Vector2(0, 52));
             var home = Button(actions, "Focus HQ  ·  Home", game.FocusBase);
-            Anchor(home.GetComponent<RectTransform>(), Vector2.zero, new Vector2(1, 0), Vector2.zero, Vector2.zero, new Vector2(0, 43));
+            home.GetComponentInChildren<TextMeshProUGUI>().fontSize = 18;
+            Anchor(home.GetComponent<RectTransform>(), Vector2.zero, new Vector2(1, 0), Vector2.zero, Vector2.zero, new Vector2(0, 52));
+
+            alertButton = Button(hud, "", game.FocusAlert);
+            alertButton.gameObject.name = "Contextual battlefield alert";
+            var alertColors = alertButton.colors;
+            alertColors.normalColor = TablePalette.Ink;
+            alertColors.highlightedColor = Color.Lerp(TablePalette.Ink, TablePalette.Gold, .16f);
+            alertColors.selectedColor = alertColors.highlightedColor;
+            alertColors.pressedColor = Color.Lerp(TablePalette.Ink, TablePalette.Gold, .25f);
+            alertButton.colors = alertColors;
+            Anchor(alertButton.GetComponent<RectTransform>(), new Vector2(.5f, 1), new Vector2(.5f, 1), new Vector2(.5f, 1), new Vector2(0, -136), new Vector2(740, 52));
+            alertText = alertButton.GetComponentInChildren<TextMeshProUGUI>(); alertText.fontSize = 20;
 
             spectatorSection = Container("Spectator commands", bottom); Stretch(spectatorSection);
             Label(spectatorSection, "NEURAL WAR ROOM", 17, TablePalette.Gold, new Vector2(26, -20), new Vector2(300, 28), FontStyles.Bold, 1.2f);
@@ -178,20 +225,42 @@ namespace Tablefront
             spectatorIntents.rectTransform.offsetMin = new Vector2(16, 16); spectatorIntents.rectTransform.offsetMax = new Vector2(-26, -16);
         }
 
+        void UseSquad(int slot)
+        {
+            if (assigningSquad) { game.AssignGroup(slot); assigningSquad = false; }
+            else game.RecallGroup(slot);
+            Refresh();
+        }
+
+        void BuildTutorial()
+        {
+            tutorialCard = Box("Optional field training", hud, WithAlpha(TablePalette.Ink, .97f), true);
+            Anchor(tutorialCard, new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-20, -202), new Vector2(452, 224));
+            tutorialProgress = Label(tutorialCard, "FIELD TRAINING", 14, TablePalette.Gold, new Vector2(20, -17), new Vector2(412, 22), FontStyles.Bold, 1);
+            tutorialTitle = Label(tutorialCard, "", 25, TablePalette.Text, new Vector2(20, -48), new Vector2(412, 37), FontStyles.Bold);
+            tutorialInstruction = Label(tutorialCard, "", 19, TablePalette.Text, new Vector2(20, -92), new Vector2(412, 70));
+            tutorialSkip = Button(tutorialCard, "Skip lesson", game.SkipTutorial);
+            Top(tutorialSkip.GetComponent<RectTransform>(), 20, 174, 180, 44);
+            tutorialSkip.GetComponentInChildren<TextMeshProUGUI>().fontSize = 18;
+            tutorialDone = Button(tutorialCard, "Enter battle", game.CompleteTutorial, true);
+            Top(tutorialDone.GetComponent<RectTransform>(), 20, 174, 412, 44);
+            tutorialDone.GetComponentInChildren<TextMeshProUGUI>().fontSize = 18;
+        }
+
         void BuildModal()
         {
             modal = Box("Pause and results scrim", canvasRect, WithAlpha(TablePalette.Background, .74f), true); Stretch(modal);
             modalGroup = modal.gameObject.AddComponent<CanvasGroup>();
             var card = Box("Pause card", modal, TablePalette.Ink, true);
-            Anchor(card, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(.5f, .5f), Vector2.zero, new Vector2(580, 658));
+            Anchor(card, new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(.5f, .5f), Vector2.zero, new Vector2(680, 730));
             Label(card, "TABLEFRONT / COMMAND ROOM", 15, TablePalette.Gold, new Vector2(36, -30), new Vector2(510, 28), FontStyles.Bold, 1.4f);
-            modalTitle = Label(card, "Battle paused", 44, TablePalette.Text, new Vector2(36, -85), new Vector2(510, 68), FontStyles.Bold);
-            modalBody = Label(card, "", 21, TablePalette.Muted, new Vector2(36, -171), new Vector2(508, 100));
-            resumeButton = Button(card, "Resume battle", game.TogglePause, true); Top(resumeButton.GetComponent<RectTransform>(), 36, 285, 508, 56);
-            restartButton = Button(card, "New battle", () => game.StartBattle(game.Spectator)); Top(restartButton.GetComponent<RectTransform>(), 36, 355, 508, 52);
-            var helpButton = Button(card, "Controls and settings", game.ToggleHelp); Top(helpButton.GetComponent<RectTransform>(), 36, 421, 508, 52);
-            var menu = Button(card, "Return to title", game.ReturnToMenu); Top(menu.GetComponent<RectTransform>(), 36, 487, 508, 52);
-            var exit = Button(card, "Exit game", game.ExitGame); Top(exit.GetComponent<RectTransform>(), 36, 575, 508, 46);
+            modalTitle = Label(card, "Battle paused", 44, TablePalette.Text, new Vector2(36, -78), new Vector2(608, 62), FontStyles.Bold);
+            modalBody = Label(card, "", 20, TablePalette.Text, new Vector2(36, -156), new Vector2(608, 210));
+            resumeButton = Button(card, "Resume battle", game.TogglePause, true); Top(resumeButton.GetComponent<RectTransform>(), 36, 388, 608, 54);
+            restartButton = Button(card, "Rematch", game.Rematch); Top(restartButton.GetComponent<RectTransform>(), 36, 452, 608, 54);
+            var helpButton = Button(card, "Controls and settings", game.ToggleHelp); Top(helpButton.GetComponent<RectTransform>(), 36, 516, 608, 48);
+            var menu = Button(card, "Return to title", game.ReturnToMenu); Top(menu.GetComponent<RectTransform>(), 36, 574, 608, 48);
+            var exit = Button(card, "Exit game", game.ExitGame); Top(exit.GetComponent<RectTransform>(), 36, 654, 608, 48);
         }
 
         void BuildHelp()
@@ -205,15 +274,15 @@ namespace Tablefront
             Label(card, "Hold beacons to earn victory points and extra credits. Reach 350 points or eliminate both enemy headquarters.", 22, TablePalette.Text, new Vector2(36, -145), new Vector2(948, 76));
             var rule = Box("Manual rule", card, WithAlpha(TablePalette.Gold, .4f)); Top(rule, 36, 236, 948, 2);
             Label(card, "COMMAND", 15, TablePalette.Gold, new Vector2(36, -266), new Vector2(450, 28), FontStyles.Bold, 1.4f);
-            Label(card, "Click / drag     Select blue units\nShift                  Add to selection\nRight-click       Move and attack nearby\nEnemy click      Right-click to focus fire\nCtrl+A               Select your whole army\n1 / 2 / 3             Recruit Scout / Rifle / Tank\nTab                    Let AI command your army", 20, TablePalette.Text, new Vector2(36, -311), new Vector2(480, 250));
+            Label(card, "Click / drag    Select blue units\nShift                 Add to selection\nRight-click      Move / focus an enemy\nCtrl+A              Select all\n4 / 5 / 6            Recall Alpha / Bravo / Charlie\nCtrl+4 / 5 / 6   Assign selected to squad\n1 / 2 / 3            Recruit Scout / Rifle / Tank\nTab                   Toggle neural command", 19, TablePalette.Text, new Vector2(36, -311), new Vector2(480, 250));
             Label(card, "CAMERA & BATTLE", 15, TablePalette.Gold, new Vector2(554, -266), new Vector2(420, 28), FontStyles.Bold, 1.4f);
-            Label(card, "WASD / arrows   Pan the table\nMouse wheel        Zoom\nQ / E                      Orbit\nMiddle drag           Pan\nHome                     Focus your HQ\nSpace / Escape      Pause\nF11                         Fullscreen", 20, TablePalette.Text, new Vector2(554, -311), new Vector2(430, 250));
+            Label(card, "WASD / arrows   Pan the table\nMouse wheel        Zoom\nQ / E                      Orbit\nMiddle drag           Pan\nHome                     Focus your HQ\nF                              Focus current alert\nSpace / Escape      Pause\nF11                         Fullscreen", 19, TablePalette.Text, new Vector2(554, -311), new Vector2(430, 250));
             Label(card, "VOLUME", 13, TablePalette.Gold, new Vector2(36, -593), new Vector2(110, 24), FontStyles.Bold, 1);
             BuildVolume(card);
             reduced = BuildToggle(card, "Reduced motion", new Vector2(440, -590));
             reduced.onValueChanged.AddListener(value => { if (game != null) game.ReducedMotion = value; });
             helpClose = Button(card, "Back", game.ToggleHelp, true); Top(helpClose.GetComponent<RectTransform>(), 776, 630, 208, 50);
-            Label(card, "Scouts capture quickly. Rifles hold ground. Tanks break concentrated forces.", 16, TablePalette.Muted, new Vector2(36, -661), new Vector2(715, 30));
+            Label(card, "Scouts: fast capture. Rifles: 35% less damage in cover.\nTanks: +20% damage against tanks. All armies share these rules.", 16, TablePalette.Text, new Vector2(36, -652), new Vector2(715, 48));
         }
 
         void BuildVolume(RectTransform parent)
@@ -267,6 +336,7 @@ namespace Tablefront
             help.gameObject.SetActive(helpVisible);
             bool ended = sim != null && sim.Finished;
             resumeButton.gameObject.SetActive(!ended);
+            if (menuVisible || modalVisible || helpVisible) assigningSquad = false;
             // Restore focus only on real panel transitions, allowing normal keyboard navigation.
             if (helpVisible && !wasHelp)
             {
@@ -298,10 +368,36 @@ namespace Tablefront
                 scoreFill[i].anchorMax = new Vector2(Mathf.Clamp01(team.Score / BattleSimulation.VictoryScore), 1);
             }
             Set(selectionText, game.SelectionSummary);
+            Set(orderText, game.SelectedOrderSummary);
+            Set(roleText, game.SelectedRoleSummary);
+            bool canCommand = !menuVisible && !observer && !game.Paused && !helpVisible && !sim.Finished && army.Alive;
+            if (game.Selected.Count == 0) assigningSquad = false;
+            for (int i = 0; i < 3; i++)
+            {
+                int count = game.GroupCount(i);
+                Set(squadText[i], assigningSquad ? "Set " + squadNames[i] : $"{i + 4} {squadNames[i]} · {count}");
+                squadButtons[i].interactable = canCommand && (assigningSquad ? game.Selected.Count > 0 : count > 0);
+            }
+            Set(assignSquadText, assigningSquad ? "Cancel assignment" : "Assign selected…");
+            assignSquadButton.interactable = canCommand && game.Selected.Count > 0;
+            bool showAlert = canCommand && game.TacticalAlertAvailable;
+            alertButton.gameObject.SetActive(showAlert);
+            if (showAlert) Set(alertText, game.TacticalAlert + "   ·   Focus · F");
+            bool showTutorial = canCommand && game.TutorialActive;
+            tutorialCard.gameObject.SetActive(showTutorial);
+            if (showTutorial)
+            {
+                Set(tutorialProgress, game.TutorialStep >= 4 ? "FIELD TRAINING / COMPLETE" : $"FIELD TRAINING / {game.TutorialStep + 1} OF 4");
+                Set(tutorialTitle, game.TutorialTitle);
+                Set(tutorialInstruction, game.TutorialInstruction);
+                tutorialSkip.gameObject.SetActive(game.TutorialStep < 4);
+                tutorialDone.gameObject.SetActive(game.TutorialStep >= 4);
+            }
             Set(notice, game.Notice ?? "");
             Set(speedText, game.Speed + "×");
-            Set(commanderText, army.IsAI ? "AI COMMANDING YOUR ARMY" : "YOU ARE IN COMMAND");
+            Set(commanderText, game.TutorialActive ? "LESSON / OPPONENTS WAIT" : army.IsAI ? "AI COMMANDING YOUR ARMY" : "YOU ARE IN COMMAND");
             commanderButton.GetComponentInChildren<TextMeshProUGUI>().text = army.IsAI ? "Take command  ·  Tab" : "AI command  ·  Tab";
+            commanderButton.interactable = canCommand && !game.TutorialActive;
             bool canRecruit = !game.Paused && !helpVisible && !sim.Finished && army.Alive && sim.UnitCount(0) < BattleSimulation.UnitCap;
             Set(recruitStatus, !army.Alive ? "REINFORCEMENTS  /  HQ LOST" : sim.UnitCount(0) >= BattleSimulation.UnitCap ? "REINFORCEMENTS  /  ARMY AT CAPACITY" : army.RecruitCooldown > 0 ? $"REINFORCEMENTS  /  READY IN {Mathf.CeilToInt(army.RecruitCooldown)}s" : "REINFORCEMENTS  /  AT YOUR HQ");
             for (int i = 0; i < 3; i++)
@@ -309,15 +405,18 @@ namespace Tablefront
                 int cost = BattleSimulation.Cost((UnitKind)i);
                 recruit[i].interactable = canRecruit && army.Credits >= cost && army.RecruitCooldown <= 0;
                 string name = ((UnitKind)i).ToString();
-                Set(recruitText[i], $"{i + 1}  {name}\n<size=15>{cost} credits</size>");
+                string role = i == 0 ? "Fast capture" : i == 1 ? "Use cover" : "Break armor";
+                Set(recruitText[i], $"{i + 1}  {name}\n<size=17>{cost} credits</size>\n\n<size=16>{role}</size>");
             }
             Set(spectatorIntents, $"<color=#{ColorUtility.ToHtmlStringRGB(TablePalette.Team(0))}>{sim.Armies[0].Name}</color>   {sim.Armies[0].Intent}\n<color=#{ColorUtility.ToHtmlStringRGB(TablePalette.Team(1))}>{sim.Armies[1].Name}</color>   {sim.Armies[1].Intent}\n<color=#{ColorUtility.ToHtmlStringRGB(TablePalette.Team(2))}>{sim.Armies[2].Name}</color>   {sim.Armies[2].Intent}");
             if (modalVisible)
             {
                 bool finished = sim.Finished;
-                Set(modalTitle, finished ? (observer ? "Battle concluded" : sim.Winner == 0 ? "Victory secured" : "Army defeated") : "Battle paused");
-                Set(modalBody, finished ? $"{(sim.Winner >= 0 ? sim.Armies[sim.Winner].Name : "No army")} wins the tabletop.\nBattle time {mins:00}:{secs:00}. Start again with a fresh force." : "Your orders can wait.\nThe battlefield is frozen until you resume.");
+                Set(modalTitle, finished ? (sim.Winner < 0 ? "Battle drawn" : !game.PlayerMatch ? "Battle concluded" : sim.Winner == 0 ? "Victory secured" : "Army defeated") : "Battle paused");
+                Set(modalBody, finished ? $"<color=#{ColorUtility.ToHtmlStringRGB(TablePalette.Gold)}>BATTLE RECAP · {mins:00}:{secs:00}</color>\n" + game.BattleRecap : "Your orders can wait.\nThe battlefield is frozen until you resume.");
                 resumeButton.gameObject.SetActive(!finished);
+                Top(restartButton.GetComponent<RectTransform>(), 36, finished ? 388 : 452, 608, 54);
+                Primary(restartButton, finished);
             }
         }
 
@@ -351,6 +450,17 @@ namespace Tablefront
 
         static void Set(TextMeshProUGUI label, string value) { if (label != null && label.text != value) label.text = value; }
         static Color WithAlpha(Color value, float alpha) { value.a = alpha; return value; }
+
+        static void Primary(UnityEngine.UI.Button button, bool primary)
+        {
+            var colors = button.colors;
+            colors.normalColor = primary ? TablePalette.Gold : WithAlpha(TablePalette.Text, .10f);
+            colors.highlightedColor = primary ? Color.Lerp(TablePalette.Gold, TablePalette.Text, .25f) : WithAlpha(TablePalette.Text, .20f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.pressedColor = primary ? Color.Lerp(TablePalette.Gold, TablePalette.Ink, .20f) : WithAlpha(TablePalette.Gold, .32f);
+            button.colors = colors;
+            button.GetComponent<TablefrontButtonFeedback>().Configure(button.GetComponent<UnityEngine.UI.Outline>(), button.GetComponentInChildren<TextMeshProUGUI>(), primary);
+        }
 
         RectTransform Container(string name, Transform parent)
         {
@@ -401,6 +511,8 @@ namespace Tablefront
         { Anchor(rect, Vector2.zero, Vector2.one, new Vector2(.5f, .5f), Vector2.zero, Vector2.zero); }
         static void Top(RectTransform rect, float left, float top, float width, float height)
         { Anchor(rect, new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(left, -top), new Vector2(width, height)); }
+        static void SpanTop(RectTransform rect, float top, float height)
+        { Anchor(rect, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, 1), new Vector2(0, -top), new Vector2(0, height)); }
         static void Fraction(RectTransform rect, float minX, float maxX, float horizontalInset, float verticalInset)
         { Stretch(rect); rect.anchorMin = new Vector2(minX, 0); rect.anchorMax = new Vector2(maxX, 1); rect.offsetMin = new Vector2(horizontalInset, verticalInset); rect.offsetMax = new Vector2(-horizontalInset, -verticalInset); }
         static void LayoutItem(GameObject go, float width, float height)

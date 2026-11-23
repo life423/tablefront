@@ -9,3 +9,20 @@ Run `Run-Mechanics.ps1` and `Run-Neural.ps1` from PowerShell. Both compile the *
 The standalone probe bypasses Unity's `Resources.Load` native path by setting the deserialized trained policy directly. Resource import/loading and graphical interaction must be checked separately in the actual Unity Editor/player. The observed matches do not establish advanced RTS tactics or human balance.
 
 Evidence: `mechanics-results.txt`, `neural-runtime-results.txt`, and per-match `neural-runtime-results.json`.
+
+## Tactical update verification (frozen policy)
+
+`Run-Tactics.ps1` runs25 targeted mechanical checks using the actual simulation and Unity math. `Run-FrozenTactics.ps1` links the actual runtime inference and runs36 complete all-neural matches, with12 retained regression seeds and24 fresh seeds. Neither script links an optimizer or starts training. Earlier release evidence above remains unchanged; tactical results have separate names.
+
+The new shared rules are:
+
+- Six nonblocking cover zones flank the three beacons, each with radius2.2. Rifle squads in cover take65% of normal direct and splash damage. Scouts and tanks receive no cover reduction.
+- Scouts contribute1.5 capture weight through the existing capped square-root capture formula. One scout therefore captures about22% faster than one rifle or tank, rather than50% faster. Enemy presence still contests capture regardless of weight.
+- Shells from actual tank units deal20% extra damage to tanks. The HQ turret does not receive this bonus. Existing tank splash remains.
+- These rules apply equally to human and neural factions. Costs, unit caps,40 observation inputs,10 actions and trained policy bytes are unchanged.
+
+The frozen check reports **36/36 normal victories, zero timeouts, zero invalid states across142,358 fixed steps**, covering108 commander participations. It checks finite health/positions/economy and board/unit limits throughout every rollout. Wins by seat were8/8/20; this is not evidence of balanced faction win rates, cover-aware learned tactics or human fun. No forced ranking invents a winner when the600-second guard is reached. See `frozen-tactical-results.json` for exact seeds, policy SHA-256 and per-match outcomes.
+
+`tactical-neural-runtime-results.json` and its text companion retain the original12-seed inference-suite rerun under these rules: maximum probability difference2.68221e-7, zero sampled-action disagreements across10,000 observations, and12 normal battles. `tactical-mechanics-results.txt` records all57 existing mechanics checks passing. `tactical-results.txt` records the25 focused checks.
+
+Recap statistics count direct/splash weapon kills once each, include disbanded survivors among the defeated army's losses without awarding fictitious enemy kills, distinguish paid reinforcements from initial deployment, and accumulate uncontested beacon-seconds. The latest capture or HQ-destruction event is recorded with simulation time; it is an observed event, not proof of the sole cause of victory. All counters reset on a new simulation.

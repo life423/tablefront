@@ -1,6 +1,6 @@
 # Windows installer
 
-The release includes **Tablefront-Setup-v0.2.1.exe**, a single Windows installer. It installs the complete x64 Unity player to `%LOCALAPPDATA%\Programs\Tablefront`, with desktop and Start menu shortcuts selected by default and an entry in Windows Installed apps. It needs no administrator access and never installs Unity or the .NET SDK.
+The tactical preview includes **Tablefront-Setup-v0.3.0.exe**, a single Windows installer. It installs the complete x64 Unity player to `%LOCALAPPDATA%\Programs\Tablefront`, with desktop and Start menu shortcuts selected by default and an entry in Windows Installed apps. It needs no administrator access and never installs Unity or the .NET SDK.
 
 Both shortcuts, and the optional **Play Tablefront** action on the finish page, launch **StartTablefront.exe**. Do not retarget them to `Tablefront.exe`: the launcher supplies the explicit Windows application identity required by the [startup fix](../Docs/STARTUP_FIX.md).
 
@@ -12,12 +12,14 @@ Use [Inno Setup 7](https://jrsoftware.org/inno-setup/downloads) or a compatible 
 
 ```powershell
 .\Tools\BuildLauncher.ps1 -BuildDirectory 'C:\Builds\Tablefront'
-.\Installer\BuildInstaller.ps1 -BuildDirectory 'C:\Builds\Tablefront' -OutputDirectory 'C:\Releases' -Version '0.2.1'
+.\Installer\BuildInstaller.ps1 -BuildDirectory 'C:\Builds\Tablefront' -OutputDirectory 'C:\Releases' -Version '0.3.0'
 ```
 
-The compiler is a developer tool only. Players need only the resulting setup EXE. The script requires every runtime folder and excludes Unity's backup directory, build provenance and debug symbols. `AppId` in `Tablefront.iss` must stay stable for future upgrades. Increase the version and rebuild the installer when the game changes. The packaged game and launcher are unchanged from the v0.2.1 portable release.
+The compiler is a developer tool only. Players need only the resulting setup EXE. The script requires every runtime folder and excludes Unity's backup directory, build provenance and debug symbols. `AppId` in `Tablefront.iss` must stay stable for future upgrades. Increase the version and rebuild the installer when the game changes. The launcher startup fix is preserved in 0.3.0.
 
 ## Verification
+
+The **0.2.1→0.3.0 upgrade** succeeded, all190 installed payload hashes matched the new build, registration displayed0.3.0 and both desktop/Start menu links targetedStartTablefront.exe. Launching the actual desktop shortcut produced a responding native window, completed scene initialization with no runtime exceptions, and the new title menu was visually inspected. No native gameplay input was sent. See [upgrade evidence](../TestResults/tactical-installer-verification.json) and [native startup](../TestResults/tactical-native-startup.json). The following preserves the original installer lifecycle verification; the user's installed game was not uninstalled during upgrade testing.
 
 Verified on November 22, 2026 using Inno Setup 7.1.1 x64:
 

@@ -16,6 +16,8 @@ namespace Tablefront
         public bool IsAI;
         public float RecruitCooldown;
         public string Intent;
+        public int UnitsLost, UnitsDestroyed, BeaconsCaptured, ReinforcementsDeployed;
+        public float BeaconSeconds;
         public bool Alive => BaseHealth > 0f;
         internal float DecisionTimer, TurretTimer, SinceDamage;
         internal int Recruited;
@@ -46,10 +48,19 @@ namespace Tablefront
         public bool Contested;
     }
 
+    [Serializable]
+    public sealed class CoverZone
+    {
+        public string Name;
+        public Vector2 Position;
+        public float Radius;
+    }
+
     public struct CombatEvent
     {
         public Vector2 From, To;
-        public int Team;
+        public int Team, ShooterId;
+        public UnitKind WeaponKind;
         public bool Heavy, Killed;
     }
 
@@ -66,11 +77,17 @@ namespace Tablefront
         public const float CaptureRadius = 3.3f;
         public const int ObservationCount = 40;
         public const int ActionCount = 10;
+        public const float ScoutCaptureWeight = 1.5f;
+        public const float RifleCoverDamageMultiplier = .65f;
+        public const float TankArmorDamageMultiplier = 1.2f;
 
         public readonly List<Army> Armies = new List<Army>(3);
         public readonly List<Troop> Units = new List<Troop>(80);
         public readonly List<ControlPoint> Points = new List<ControlPoint>(3);
         public readonly List<CombatEvent> Events = new List<CombatEvent>(80);
+        public readonly List<CoverZone> CoverZones = new List<CoverZone>(6);
+        public string LastTurningPoint { get; private set; } = "The opening deployment";
+        public float LastTurningPointTime { get; private set; }
         public float Elapsed;
         public int Winner = -1;
         public bool Finished;
@@ -82,11 +99,13 @@ namespace Tablefront
         readonly List<Hit> pendingHits = new List<Hit>(90);
         readonly List<int> orderScratch = new List<int>(30);
         readonly int[] captureCounts = new int[3];
+        readonly float[] captureWeights = new float[3];
         int nextId = 1, stepNumber;
 
         struct Hit
         {
-            public int TargetId, BaseTeam, AttackerTeam;
+            public int TargetId, BaseTeam, AttackerTeam, ShooterId;
+            public UnitKind WeaponKind;
             public float Damage;
             public Vector2 From, To;
             public bool Heavy;
@@ -129,6 +148,15 @@ namespace Tablefront
             Points.Add(new ControlPoint { Id = 0, Name = "WEST", Position = new Vector2(-10f, -6f) });
             Points.Add(new ControlPoint { Id = 1, Name = "EAST", Position = new Vector2(10f, -6f) });
             Points.Add(new ControlPoint { Id = 2, Name = "NORTH", Position = new Vector2(0f, 12f) });
+            // Cover is low, passable terrain, not a pathfinding obstacle. Its flanking
+            // positions overlap the outside of each capture ring rather than its centre.
+            foreach (var point in Points)
+            {
+                var radial = point.Position.normalized;
+                var flank = new Vector2(-radial.y, radial.x);
+                CoverZones.Add(new CoverZone { Name = point.Name + " left cover", Position = point.Position - flank * 4f, Radius = 2.2f });
+                CoverZones.Add(new CoverZone { Name = point.Name + " right cover", Position = point.Position + flank * 4f, Radius = 2.2f });
+            }
             foreach (Army army in Armies)
             {
                 Spawn(army, UnitKind.Scout);
@@ -164,6 +192,32 @@ namespace Tablefront
             return count;
         }
 
+        public bool IsInCover(Vector2 position)
+        {
+            if (!Finite(position)) return false;
+            for (int i = 0; i < CoverZones.Count; i++)
+            {
+                CoverZone zone = CoverZones[i];
+                if ((position - zone.Position).sqrMagnitude <= zone.Radius * zone.Radius) return true;
+            }
+            return false;
+        }
+
+        public bool IsProtected(Troop troop)
+        {
+            return troop != null && troop.Alive && troop.Kind == UnitKind.Rifle && IsInCover(troop.Position);
+        }
+
+        public static string RoleDescription(UnitKind kind)
+        {
+            switch (kind)
+            {
+                case UnitKind.Scout: return "Fast flanker / quicker capture";
+                case UnitKind.Tank: return "Heavy gun / anti-armour / splash";
+                default: return "Line infantry / protected in cover";
+            }
+        }
+
         public bool Recruit(int team, UnitKind kind)
         {
             if (Finished || team < 0 || team >= Armies.Count || (int)kind < 0 || (int)kind > 2) return false;
@@ -173,6 +227,7 @@ namespace Tablefront
             army.Credits -= cost;
             army.RecruitCooldown = kind == UnitKind.Tank ? 3.5f : 2f;
             Spawn(army, kind);
+            army.ReinforcementsDeployed++;
             return true;
         }
 
@@ -535,7 +590,7 @@ namespace Tablefront
             unit.ShotFlash = 1f;
             pendingHits.Add(new Hit
             {
-                TargetId = target, BaseTeam = baseTeam, AttackerTeam = unit.Team,
+                TargetId = target, BaseTeam = baseTeam, AttackerTeam = unit.Team, ShooterId = unit.Id, WeaponKind = unit.Kind,
                 Damage = damage, From = unit.Position, To = to, Heavy = unit.Kind == UnitKind.Tank
             });
         }
@@ -549,7 +604,7 @@ namespace Tablefront
             army.TurretTimer = 1.15f;
             pendingHits.Add(new Hit
             {
-                TargetId = target.Id, BaseTeam = -1, AttackerTeam = army.Id, Damage = 20f,
+                TargetId = target.Id, BaseTeam = -1, AttackerTeam = army.Id, ShooterId = -1, WeaponKind = UnitKind.Tank, Damage = 20f,
                 From = army.BasePosition, To = target.Position, Heavy = true
             });
         }
@@ -567,14 +622,17 @@ namespace Tablefront
                     army.BaseHealth = Mathf.Max(0f, army.BaseHealth - hit.Damage);
                     army.SinceDamage = 0f;
                     killed = !army.Alive;
-                    if (killed) Eliminate(army);
+                    if (killed)
+                    {
+                        Eliminate(army);
+                        RecordTurningPoint(Armies[hit.AttackerTeam].Name + " destroyed " + army.Name + " HQ");
+                    }
                 }
                 else
                 {
                     Troop target = FindUnit(hit.TargetId);
                     if (target == null || !target.Alive) continue;
-                    target.Health = Mathf.Max(0f, target.Health - hit.Damage);
-                    killed = !target.Alive;
+                    killed = DamageTroop(target, hit.Damage, hit);
                     if (killed) Armies[hit.AttackerTeam].Credits = Mathf.Min(999f, Armies[hit.AttackerTeam].Credits + 9f);
                     // Tank shells damage nearby opponents only. There is no hidden friendly immunity difference by controller.
                     if (hit.Heavy)
@@ -584,19 +642,46 @@ namespace Tablefront
                             Troop splash = Units[u];
                             if (!splash.Alive || splash.Id == hit.TargetId || splash.Team == hit.AttackerTeam) continue;
                             float distance = Vector2.Distance(splash.Position, hit.To);
-                            if (distance < 1.65f) splash.Health = Mathf.Max(0f, splash.Health - hit.Damage * .22f * (1f - distance / 1.65f));
+                            if (distance < 1.65f)
+                                killed |= DamageTroop(splash, hit.Damage * .22f * (1f - distance / 1.65f), hit);
                         }
                     }
                 }
-                Events.Add(new CombatEvent { From = hit.From, To = hit.To, Team = hit.AttackerTeam, Heavy = hit.Heavy, Killed = killed });
+                Events.Add(new CombatEvent { From = hit.From, To = hit.To, Team = hit.AttackerTeam, ShooterId = hit.ShooterId, WeaponKind = hit.WeaponKind, Heavy = hit.Heavy, Killed = killed });
             }
+        }
+
+        bool DamageTroop(Troop target, float damage, Hit hit)
+        {
+            if (!target.Alive) return false;
+            if (IsProtected(target)) damage *= RifleCoverDamageMultiplier;
+            // Only actual tank units receive the anti-armour bonus; the HQ gun does not.
+            if (hit.ShooterId > 0 && hit.WeaponKind == UnitKind.Tank && target.Kind == UnitKind.Tank)
+                damage *= TankArmorDamageMultiplier;
+            target.Health = Mathf.Max(0f, target.Health - damage);
+            if (target.Alive) return false;
+            Armies[target.Team].UnitsLost++;
+            Armies[hit.AttackerTeam].UnitsDestroyed++;
+            return true;
+        }
+
+        void RecordTurningPoint(string text)
+        {
+            LastTurningPoint = text;
+            LastTurningPointTime = Elapsed;
         }
 
         void Eliminate(Army army)
         {
             army.Intent = "Headquarters destroyed";
             army.Credits = 0f;
-            for (int i = 0; i < Units.Count; i++) if (Units[i].Team == army.Id) Units[i].Health = 0f;
+            for (int i = 0; i < Units.Count; i++)
+                if (Units[i].Team == army.Id && Units[i].Alive)
+                {
+                    // Disbanded survivors are losses, not fictitious kills for an opponent.
+                    army.UnitsLost++;
+                    Units[i].Health = 0f;
+                }
             for (int i = 0; i < Points.Count; i++)
             {
                 ControlPoint point = Points[i];
@@ -608,10 +693,15 @@ namespace Tablefront
         void UpdatePoint(ControlPoint point, float dt)
         {
             Array.Clear(captureCounts, 0, captureCounts.Length);
+            Array.Clear(captureWeights, 0, captureWeights.Length);
             for (int i = 0; i < Units.Count; i++)
             {
                 Troop unit = Units[i];
-                if (unit.Alive && (unit.Position - point.Position).sqrMagnitude <= CaptureRadius * CaptureRadius) captureCounts[unit.Team]++;
+                if (unit.Alive && (unit.Position - point.Position).sqrMagnitude <= CaptureRadius * CaptureRadius)
+                {
+                    captureCounts[unit.Team]++;
+                    captureWeights[unit.Team] += unit.Kind == UnitKind.Scout ? ScoutCaptureWeight : 1f;
+                }
             }
             int soleTeam = -1, present = 0;
             for (int i = 0; i < 3; i++) if (captureCounts[i] > 0) { present++; soleTeam = i; }
@@ -626,12 +716,14 @@ namespace Tablefront
                 else
                 {
                     if (point.CapturingTeam != soleTeam) { point.CapturingTeam = soleTeam; point.CaptureProgress = 0f; }
-                    point.CaptureProgress = Mathf.Min(1f, point.CaptureProgress + dt * .135f * Mathf.Sqrt(Mathf.Min(4, captureCounts[soleTeam])));
+                    point.CaptureProgress = Mathf.Min(1f, point.CaptureProgress + dt * .135f * Mathf.Sqrt(Mathf.Min(4f, captureWeights[soleTeam])));
                     if (point.CaptureProgress >= 1f)
                     {
                         point.Owner = soleTeam;
                         Armies[soleTeam].Credits = Mathf.Min(999f, Armies[soleTeam].Credits + 20f);
                         Armies[soleTeam].Score += 5f;
+                        Armies[soleTeam].BeaconsCaptured++;
+                        RecordTurningPoint(Armies[soleTeam].Name + " captured " + point.Name);
                     }
                 }
             }
@@ -645,7 +737,10 @@ namespace Tablefront
                 }
             }
             if (point.Owner >= 0 && !point.Contested && Armies[point.Owner].Alive)
+            {
                 Armies[point.Owner].Score += dt * 1.1f;
+                Armies[point.Owner].BeaconSeconds += dt;
+            }
         }
 
         void CheckVictory()

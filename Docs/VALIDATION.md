@@ -1,5 +1,9 @@
 # Tablefront validation — November 22,2026
 
+## Tactical playtest: v0.3.0
+
+See [TACTICAL_UPDATE.md](TACTICAL_UPDATE.md) for all five implemented improvements, shared terrain/unit rules, 39 integration checks, rendered review and limitations. Training remains paused and policy bytes are unchanged. Earlier release evidence below remains historical.
+
 ## Current release: v0.2.0 graphics update
 
 Hardware query confirmed an NVIDIA GeForce RTX 5070, 12,227 MiB reported VRAM, driver 621.01 and a 2560×1440 display at approximately 144 Hz. The original player used that discrete GPU through Direct3D 12. The VRAM figure comes from nvidia-smi; the Windows video-controller AdapterRAM field is limited to a 32-bit number.

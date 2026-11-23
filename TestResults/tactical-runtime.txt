@@ -1,0 +1,39 @@
+PASS Lesson starts at selection with no precompleted step
+PASS Opposing commanders wait throughout the lesson
+PASS Actual selection advances lesson
+PASS Invalid orders are rejected without success feedback
+PASS Lesson issues a real formation move
+PASS Moving to a beacon advances lesson and orders the simulation
+PASS Lesson capture uses live movement and capture rules
+PASS Paid reinforcement completes the fourth lesson task
+PASS Enter battle enables opponents without resetting the learned interaction
+PASS Skip lesson returns to live opposing commanders
+PASS Initial Alpha/Bravo/Charlie groups separate scouts/rifles/tank
+PASS Virtual 4 recalls scout force
+PASS Two forces retain independent orders toward different beacons
+PASS Split-force orders leave unselected tank orders unchanged
+PASS Virtual 5 recalls rifle force
+PASS Ctrl+6 reassigns Charlie and virtual 6 recalls the assigned selection
+PASS Reinforcements join an uncustomized role group
+PASS Recruitment preserves a manually assigned group's membership
+PASS Pointer-accessible assignment stores the selected force
+PASS Pause suppresses squad commands
+PASS Selected movement displays a bounded persistent order-guide pool
+PASS Deselecting removes order overlays
+PASS Visible cover matches all six mechanical cover positions
+PASS Selected rifle explains its actual protected state
+PASS Tank event drives actual cannon recoil
+PASS Reduced motion disables cannon movement
+PASS Repeated firing reuses fixed effects instead of growing the pool
+PASS Battlefield audio uses exactly eight capped voices
+PASS Updated game advances actual Editor frames and simulation time
+PASS Actual HQ damage creates contextual danger feedback
+PASS Virtual F focuses the threatened HQ within camera bounds
+PASS Pause freezes rules and hides contextual action overlays
+PASS Victory recap explains objective outcome and battle statistics
+PASS Rematch starts a clean player battle and resets recap counters
+PASS HQ defeat permits observation while retaining original player match identity
+PASS Rematch after HQ defeat restores player control
+PASS HQ victory recap avoids claiming credit for another faction's destruction
+PASS Simultaneous HQ loss produces a safe draw result
+PASS Spectator rematch retains spectator mode

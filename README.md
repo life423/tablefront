@@ -2,6 +2,8 @@
 
 A Windows tabletop RTS made in Unity. Command a miniature army against two neural commanders, or watch all three fight through self-play tactics.
 
+The **0.3.0 tactical playtest** adds squads, combat feedback, recaps, a playable lesson and cover/role mechanics. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.3.0-preview.1/Tablefront-Setup-v0.3.0.exe) or read [changes and verification](Docs/TACTICAL_UPDATE.md). The stable download below remains 0.2.1 while the new tactics receive human playtesting.
+
 ![Tablefront battlefield](Docs/Images/tablefront-battle.png)
 
 ## Play
@@ -25,12 +27,15 @@ Your six starting units are selected. **Right-click a beacon** to advance. Keep 
 | Shift + select | Add or remove units from the selection |
 | Right-click ground / enemy | Move in formation / focus fire |
 | Ctrl+A | Select your whole army |
+| 4 / 5 / 6 | Recall Alpha / Bravo / Charlie (0.3.0 preview) |
+| Ctrl+4 / Ctrl+5 / Ctrl+6 | Assign selected troops to a group (preview) |
 | 1 / 2 / 3 | Recruit Scout / Rifle / Tank at your HQ |
 | WASD / arrows | Pan the camera |
 | Mouse wheel | Zoom |
 | Q / E | Rotate the view |
 | Middle mouse drag | Pan with the mouse |
 | Home | Focus your HQ |
+| F | Focus the current HQ/beacon alert (preview) |
 | Tab | Hand your army to its neural commander / take command back |
 | Space / Escape | Pause |
 | F1 | Open Help |

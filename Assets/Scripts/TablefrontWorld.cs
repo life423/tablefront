@@ -12,8 +12,10 @@ namespace Tablefront
     {
         sealed class Miniature
         {
-            public GameObject Root, Selection, Flash;
-            public Transform Hull, HealthRoot, HealthFill;
+            public GameObject Root, Selection, Flash, Cover;
+            public Transform Hull, HealthRoot, HealthFill, Barrel;
+            public float Recoil;
+            public UnitKind Kind;
             public Vector3 Previous;
         }
         sealed class Landmark
@@ -26,9 +28,21 @@ namespace Tablefront
         sealed class Effect
         {
             public LineRenderer Trace;
-            public Transform Impact;
+            public Transform Impact, Chip;
             public float Life, MaxLife;
             public bool Heavy;
+        }
+        sealed class OrderGuide
+        {
+            public LineRenderer Line;
+            public Transform Marker;
+            public Vector2 Destination, Origin;
+            public int Count;
+        }
+        sealed class Wreck
+        {
+            public Transform Root;
+            public float Life;
         }
 
         Camera view;
@@ -45,15 +59,21 @@ namespace Tablefront
         readonly Material[] faction = new Material[3];
         readonly Material[] factionBright = new Material[3];
         readonly Effect[] effects = new Effect[128];
-        int effectCursor;
+        readonly OrderGuide[] orderGuides = new OrderGuide[8];
+        readonly Wreck[] wrecks = new Wreck[16];
+        readonly AudioSource[] voices = new AudioSource[8];
+        int effectCursor, wreckCursor;
         Material ink, ceramic, walnut, edge, brass, terrain, sand, road, stone, foliage, foliageLight, neutral, muzzle;
         Mesh ringMesh, coneMesh, rockMesh;
         Transform orderMarker;
         float orderLife;
-        AudioSource combatAudio, ambience;
-        AudioClip lightShot, heavyShot, deathSound;
-        float soundCooldown;
+        AudioSource cueAudio, ambience;
+        AudioClip scoutShot, lightShot, heavyShot, deathSound, recruitCue, captureCue, lostCue;
+        float lightCooldown, heavyCooldown;
+        Transform coverRoot;
+        BattleSimulation coverSimulation;
         bool built;
+        public bool ReducedMotion { get; set; }
 
         public void Build(Camera camera)
         {
@@ -264,8 +284,9 @@ namespace Tablefront
         public void Render(BattleSimulation sim, ICollection<int> selected)
         {
             if (!built || sim == null) return;
+            if (coverSimulation != sim) BuildCover(sim);
             present.Clear();
-            float blend = Application.isPlaying ? 1 - Mathf.Exp(-22 * Time.unscaledDeltaTime) : 1;
+            float blend = Application.isPlaying && !ReducedMotion ? 1 - Mathf.Exp(-22 * Time.unscaledDeltaTime) : 1;
             foreach (var u in sim.Units)
             {
                 if (!u.Alive) continue;
@@ -276,8 +297,15 @@ namespace Tablefront
                 model.Root.transform.position = Vector3.Lerp(before, goal, blend);
                 model.Root.transform.rotation = Quaternion.Slerp(model.Root.transform.rotation, Quaternion.Euler(0, u.Heading, 0), blend);
                 float movement = (before - goal).sqrMagnitude;
-                if (model.Hull != null) model.Hull.localPosition = new Vector3(0, movement > .0008f ? Mathf.Sin(sim.Elapsed * 15 + u.Id) * .035f : 0, 0);
+                if (model.Hull != null)
+                {
+                    float gait = !ReducedMotion && movement > .0008f ? Mathf.Sin(sim.Elapsed * (u.Kind == UnitKind.Rifle ? 15 : 11) + u.Id) : 0;
+                    model.Hull.localPosition = new Vector3(0, gait * (u.Kind == UnitKind.Tank ? .018f : .035f), 0);
+                    model.Hull.localRotation = Quaternion.Euler(!ReducedMotion ? -model.Recoil * 8 : 0, 0, gait * (u.Kind == UnitKind.Scout ? 1.2f : .45f));
+                }
+                if (model.Barrel != null) model.Barrel.localPosition = new Vector3(0, 0, ReducedMotion ? 0 : -.21f * model.Recoil);
                 model.Selection.SetActive(selected != null && selected.Contains(u.Id));
+                model.Cover.SetActive(sim.IsProtected(u));
                 model.Flash.SetActive(u.ShotFlash > .01f);
                 model.HealthRoot.gameObject.SetActive(u.Health < u.MaxHealth - .1f || (selected != null && selected.Contains(u.Id)));
                 model.HealthRoot.rotation = view.transform.rotation;
@@ -286,7 +314,7 @@ namespace Tablefront
                 model.HealthFill.localPosition = new Vector3(-.44f * (1 - fraction), 0, -.012f);
             }
             removed.Clear(); foreach (var pair in miniatures) if (!present.Contains(pair.Key)) removed.Add(pair.Key);
-            foreach (var id in removed) { Destroy(miniatures[id].Root); miniatures.Remove(id); }
+            foreach (var id in removed) { ShowWreck(miniatures[id]); Destroy(miniatures[id].Root); miniatures.Remove(id); }
             foreach (var point in sim.Points)
             {
                 if (!pointViews.TryGetValue(point.Id, out var lm)) { lm = CreatePoint(point); pointViews.Add(point.Id, lm); }
@@ -302,7 +330,74 @@ namespace Tablefront
                 lm.Root.SetActive(army.Alive);
                 if (lm.Health != null) lm.Health.localScale = new Vector3(Mathf.Clamp(army.BaseHealth / BattleSimulation.BaseMaxHealth, .01f, 1f) * 3.1f, .09f, .08f);
             }
+            RenderOrders(sim, selected);
             foreach (var text in worldLabels) if (text != null) text.transform.rotation = view.transform.rotation;
+        }
+
+        void BuildCover(BattleSimulation sim)
+        {
+            if (coverRoot != null) Destroy(coverRoot.gameObject);
+            coverSimulation = sim;
+            coverRoot = Group("Playable rifle cover", landmarks);
+            for (int i = 0; i < sim.CoverZones.Count; i++)
+            {
+                var zone = sim.CoverZones[i];
+                var root = Group("Low cover position " + (i + 1), coverRoot);
+                root.localPosition = V3(zone.Position, .015f);
+                Part("Worn defensive ground", root, PrimitiveType.Cylinder, Vector3.zero, new Vector3(zone.Radius * 2, .006f, zone.Radius * 2), sand);
+                MeshPart("Cover boundary", root, ringMesh, new Vector3(0, .018f, 0), Vector3.one * zone.Radius, brass);
+                // These low, permeable earthworks show protection; they are not movement obstacles.
+                for (int segment = 0; segment < 6; segment++)
+                {
+                    float angle = segment * 60f + 15f;
+                    var direction = Quaternion.Euler(0, angle, 0) * Vector3.forward;
+                    var bag = Box("Low sandbag section", root, direction * zone.Radius * .83f + Vector3.up * .13f,
+                        new Vector3(zone.Radius * .57f, .24f, .23f), stone);
+                    bag.localRotation = Quaternion.Euler(0, angle, 0);
+                }
+                // A pair of short braces distinguishes playable cover from decorative meadow patches.
+                Box("Cover marking left", root, new Vector3(-.25f, .027f, 0), new Vector3(.08f, .015f, .7f), ceramic);
+                Box("Cover marking right", root, new Vector3(.25f, .027f, 0), new Vector3(.08f, .015f, .7f), ceramic);
+            }
+        }
+
+        void RenderOrders(BattleSimulation sim, ICollection<int> selected)
+        {
+            int count = 0;
+            foreach (var guide in orderGuides) guide.Count = 0;
+            if (selected != null)
+            {
+                foreach (var unit in sim.Units)
+                {
+                    if (!unit.Alive || !unit.HasOrder || !selected.Contains(unit.Id)) continue;
+                    Vector2 destination = unit.Destination;
+                    if (unit.AttackTargetId >= 0)
+                    {
+                        foreach (var target in sim.Units) if (target.Id == unit.AttackTargetId && target.Alive) { destination = target.Position; break; }
+                    }
+                    if ((destination - unit.Position).sqrMagnitude < 1f) continue;
+                    int index = -1;
+                    for (int j = 0; j < count; j++)
+                        if ((orderGuides[j].Destination / orderGuides[j].Count - destination).sqrMagnitude < 12.25f) { index = j; break; }
+                    if (index < 0)
+                    {
+                        if (count == orderGuides.Length) continue;
+                        index = count++; orderGuides[index].Destination = orderGuides[index].Origin = Vector2.zero;
+                    }
+                    var guide = orderGuides[index];
+                    guide.Destination += destination; guide.Origin += unit.Position; guide.Count++;
+                }
+            }
+            for (int j = 0; j < orderGuides.Length; j++)
+            {
+                var guide = orderGuides[j]; bool active = j < count;
+                guide.Line.enabled = active; guide.Marker.gameObject.SetActive(active);
+                if (!active) continue;
+                Vector2 destination = guide.Destination / guide.Count;
+                guide.Line.SetPosition(0, V3(guide.Origin / guide.Count, .17f));
+                guide.Line.SetPosition(1, V3(destination, .17f));
+                guide.Marker.position = V3(destination, .08f);
+            }
         }
 
         Miniature CreateMiniature(Troop u)
@@ -320,10 +415,12 @@ namespace Tablefront
             else flash = Infantry(hull, u.Team);
             var selected = MeshPart("Selected unit ring", root, ringMesh, new Vector3(0, .022f, 0), Vector3.one * (radius + .2f), factionBright[u.Team]).gameObject;
             selected.SetActive(false);
+            var cover = MeshPart("Protected rifle ring", root, ringMesh, new Vector3(0, .028f, 0), Vector3.one * (radius + .06f), brass).gameObject;
+            cover.SetActive(false);
             var health = Group("Billboard health", root); health.localPosition = new Vector3(0, tank ? 1.68f : 1.75f, 0);
             Box("Health backing", health, Vector3.zero, new Vector3(.98f, .13f, .035f), ink);
             var fill = Box("Health", health, new Vector3(0, 0, -.012f), new Vector3(.88f, .075f, .02f), factionBright[u.Team]);
-            return new Miniature { Root = root.gameObject, Hull = hull, Selection = selected, Flash = flash, HealthRoot = health, HealthFill = fill };
+            return new Miniature { Root = root.gameObject, Hull = hull, Selection = selected, Cover = cover, Flash = flash, HealthRoot = health, HealthFill = fill, Kind = u.Kind, Barrel = tank ? hull.Find("Recoiling cannon") : null };
         }
 
         GameObject Tank(Transform root, int team)
@@ -338,11 +435,12 @@ namespace Tablefront
             Box("Ivory recognition stripe", root, new Vector3(-.32f, .785f, -.03f), new Vector3(.14f, .035f, 1.13f), ceramic);
             Part("Low turret", root, PrimitiveType.Cylinder, new Vector3(0, .93f, .02f), new Vector3(.91f, .2f, .91f), faction[team]);
             Box("Turret cap", root, new Vector3(0, 1.13f, -.12f), new Vector3(.68f, .12f, .55f), faction[team]);
-            Box("Long cannon", root, new Vector3(0, 1.01f, .91f), new Vector3(.15f, .15f, 1.28f), ink);
-            Box("Muzzle collar", root, new Vector3(0, 1.01f, 1.52f), new Vector3(.24f, .24f, .22f), stone);
+            var cannon = Group("Recoiling cannon", root);
+            Box("Long cannon", cannon, new Vector3(0, 1.01f, .91f), new Vector3(.15f, .15f, 1.28f), ink);
+            Box("Muzzle collar", cannon, new Vector3(0, 1.01f, 1.52f), new Vector3(.24f, .24f, .22f), stone);
             Box("Optics", root, new Vector3(.27f, 1.12f, .27f), new Vector3(.2f, .1f, .09f), factionBright[team]);
             Box("Antenna", root, new Vector3(-.3f, 1.42f, -.35f), new Vector3(.035f, .65f, .035f), ink);
-            var flash = Part("Cannon flash", root, PrimitiveType.Sphere, new Vector3(0, 1.01f, 1.72f), new Vector3(.42f, .42f, .65f), muzzle); flash.gameObject.SetActive(false); return flash.gameObject;
+            var flash = Part("Cannon flash", cannon, PrimitiveType.Sphere, new Vector3(0, 1.01f, 1.72f), new Vector3(.36f, .36f, .7f), muzzle); flash.gameObject.SetActive(false); return flash.gameObject;
         }
 
         GameObject Scout(Transform root, int team)
@@ -449,9 +547,28 @@ namespace Tablefront
                 line.numCapVertices = 2; line.startWidth = .07f; line.endWidth = .035f;
                 line.shadowCastingMode = ShadowCastingMode.Off; line.receiveShadows = false; line.enabled = false;
                 var impact = MeshPart("Pooled impact " + i, effectsRoot, ringMesh, Vector3.zero, Vector3.one, muzzle); impact.gameObject.SetActive(false);
-                effects[i] = new Effect { Trace = line, Impact = impact };
+                var chip = MeshPart("Pooled impact chip " + i, effectsRoot, rockMesh, Vector3.zero, Vector3.one, stone); chip.gameObject.SetActive(false);
+                effects[i] = new Effect { Trace = line, Impact = impact, Chip = chip };
             }
             orderMarker = MeshPart("Move command marker", effectsRoot, ringMesh, Vector3.zero, Vector3.one, factionBright[0]); orderMarker.gameObject.SetActive(false);
+            for (int i = 0; i < orderGuides.Length; i++)
+            {
+                var go = new GameObject("Selected force order " + (i + 1)); go.transform.SetParent(effectsRoot, false);
+                var line = go.AddComponent<LineRenderer>(); line.sharedMaterial = factionBright[0];
+                line.positionCount = 2; line.startWidth = .045f; line.endWidth = .045f; line.numCapVertices = 2;
+                line.useWorldSpace = true; line.shadowCastingMode = ShadowCastingMode.Off; line.receiveShadows = false; line.enabled = false;
+                var marker = MeshPart("Persistent destination " + (i + 1), effectsRoot, ringMesh, Vector3.zero, Vector3.one * .52f, factionBright[0]);
+                marker.gameObject.SetActive(false); orderGuides[i] = new OrderGuide { Line = line, Marker = marker };
+            }
+            for (int i = 0; i < wrecks.Length; i++)
+            {
+                var root = Group("Pooled fallen miniature " + i, effectsRoot);
+                Part("Scuffed base", root, PrimitiveType.Cylinder, new Vector3(0, .04f, 0), new Vector3(1.3f, .035f, 1.3f), ink);
+                Box("Fallen casting", root, new Vector3(.05f, .17f, 0), new Vector3(.75f, .2f, .95f), stone);
+                var fragment = Box("Bent recognition stripe", root, new Vector3(-.2f, .28f, .05f), new Vector3(.1f, .025f, .52f), ceramic);
+                fragment.localRotation = Quaternion.Euler(0, 23, 0); root.gameObject.SetActive(false);
+                wrecks[i] = new Wreck { Root = root };
+            }
         }
 
         public void PlayEvents(IReadOnlyList<CombatEvent> events)
@@ -460,20 +577,56 @@ namespace Tablefront
             for (var i = 0; i < events.Count; i++)
             {
                 var e = events[i]; var effect = effects[effectCursor++ % effects.Length];
-                effect.MaxLife = e.Heavy ? .4f : .18f; effect.Life = effect.MaxLife; effect.Heavy = e.Heavy || e.Killed;
+                bool heavy = e.Heavy || e.WeaponKind == UnitKind.Tank;
+                effect.MaxLife = heavy ? .48f : .22f; effect.Life = effect.MaxLife; effect.Heavy = heavy || e.Killed;
                 effect.Trace.enabled = true; effect.Trace.sharedMaterial = e.Heavy ? muzzle : factionBright[Mathf.Clamp(e.Team, 0, 2)];
-                effect.Trace.startWidth = e.Heavy ? .16f : .065f; effect.Trace.endWidth = e.Heavy ? .11f : .025f;
-                effect.Trace.SetPosition(0, V3(e.From, e.Heavy ? 1 : .85f)); effect.Trace.SetPosition(1, V3(e.To, .75f));
+                effect.Trace.startWidth = heavy ? .13f : e.WeaponKind == UnitKind.Scout ? .045f : .065f; effect.Trace.endWidth = heavy ? .08f : .025f;
+                Vector3 origin = V3(e.From, heavy ? 1 : .85f);
+                if (miniatures.TryGetValue(e.ShooterId, out var model))
+                {
+                    model.Recoil = heavy ? 1f : .18f;
+                    if (model.Flash != null) origin = model.Flash.transform.position;
+                }
+                effect.Trace.SetPosition(0, origin); effect.Trace.SetPosition(1, V3(e.To, .75f));
                 effect.Impact.position = V3(e.To, .08f); effect.Impact.localScale = Vector3.one * .15f;
                 effect.Impact.GetComponent<Renderer>().sharedMaterial = e.Killed || e.Heavy ? muzzle : factionBright[Mathf.Clamp(e.Team, 0, 2)];
                 effect.Impact.gameObject.SetActive(true);
-                if (soundCooldown <= 0 && combatAudio != null)
+                effect.Chip.position = V3(e.To, .13f); effect.Chip.localScale = new Vector3(.19f, .14f, .19f);
+                effect.Chip.gameObject.SetActive(heavy || e.Killed);
+                if ((heavy ? heavyCooldown : lightCooldown) <= 0)
                 {
-                    combatAudio.PlayOneShot(e.Killed ? deathSound : e.Heavy ? heavyShot : lightShot, e.Heavy ? .21f : .1f);
-                    soundCooldown = e.Heavy ? .1f : .065f;
+                    PlayWorldSound(e.Killed ? deathSound : heavy ? heavyShot : e.WeaponKind == UnitKind.Scout ? scoutShot : lightShot,
+                        e.To, e.Killed ? .28f : heavy ? .30f : .15f, .96f + (i % 5) * .018f);
+                    if (heavy) heavyCooldown = .095f; else lightCooldown = .075f;
                 }
             }
         }
+
+        void ShowWreck(Miniature model)
+        {
+            var wreck = wrecks[wreckCursor++ % wrecks.Length];
+            wreck.Root.position = model.Root.transform.position;
+            wreck.Root.rotation = model.Root.transform.rotation;
+            wreck.Root.localScale = Vector3.one * (model.Kind == UnitKind.Tank ? 1.2f : .8f);
+            wreck.Life = 1.8f; wreck.Root.gameObject.SetActive(true);
+        }
+
+        void PlayWorldSound(AudioClip clip, Vector2 position, float gain, float pitch)
+        {
+            if (clip == null) return;
+            // Eight fixed voices cap concurrent sounds. View-relative stereo stays audible from a high RTS camera.
+            foreach (var voice in voices)
+            {
+                if (voice == null || voice.isPlaying) continue;
+                Vector3 viewport = view != null ? view.WorldToViewportPoint(V3(position)) : new Vector3(.5f, .5f, 1);
+                voice.panStereo = Mathf.Clamp((viewport.x - .5f) * 1.3f, -.75f, .75f);
+                voice.volume = gain * (viewport.z > 0 && viewport.x > -.15f && viewport.x < 1.15f && viewport.y > -.15f && viewport.y < 1.15f ? 1 : .4f);
+                voice.pitch = pitch; voice.clip = clip; voice.Play(); return;
+            }
+        }
+
+        public void PlayRecruitCue() { if (cueAudio != null && recruitCue != null) { cueAudio.clip = recruitCue; cueAudio.Play(); } }
+        public void PlayCaptureCue(bool friendly) { if (cueAudio != null) { cueAudio.clip = friendly ? captureCue : lostCue; if (cueAudio.clip != null) cueAudio.Play(); } }
 
         public void ShowOrder(Vector2 location)
         {
@@ -484,18 +637,29 @@ namespace Tablefront
         void Update()
         {
             float dt = Time.unscaledDeltaTime;
-            soundCooldown -= dt;
+            lightCooldown -= dt; heavyCooldown -= dt;
+            foreach (var model in miniatures.Values) model.Recoil = Mathf.MoveTowards(model.Recoil, 0, dt * 5.5f);
             for (var i = 0; i < effects.Length; i++)
             {
                 var e = effects[i]; if (e == null || e.Life <= 0) continue;
                 e.Life -= dt; float p = Mathf.Clamp01(e.Life / e.MaxLife);
-                e.Trace.enabled = e.Life > e.MaxLife * .5f;
-                e.Impact.localScale = Vector3.one * ((e.Heavy ? 1.3f : .55f) * (1 - p) + .12f);
-                if (e.Life <= 0) { e.Trace.enabled = false; e.Impact.gameObject.SetActive(false); }
+                e.Trace.enabled = e.Life > e.MaxLife * .7f;
+                float radius = ReducedMotion ? (e.Heavy ? .55f : .22f) * p : Mathf.Sin(p * Mathf.PI) * (e.Heavy ? 1.05f : .4f);
+                e.Impact.localScale = Vector3.one * Mathf.Max(.001f, radius);
+                e.Chip.localScale = Vector3.one * (e.Heavy ? .32f : .15f) * p;
+                if (!ReducedMotion) e.Chip.position += Vector3.up * dt * .45f * p;
+                if (e.Life <= 0) { e.Trace.enabled = false; e.Impact.gameObject.SetActive(false); e.Chip.gameObject.SetActive(false); }
+            }
+            foreach (var wreck in wrecks)
+            {
+                if (wreck == null || wreck.Life <= 0) continue;
+                wreck.Life -= dt;
+                if (wreck.Life < .45f) wreck.Root.localScale *= Mathf.Max(0, 1 - dt * 9);
+                if (wreck.Life <= 0) wreck.Root.gameObject.SetActive(false);
             }
             if (orderLife > 0)
             {
-                orderLife -= dt; orderMarker.localScale = Vector3.one * Mathf.Lerp(.65f, 1.1f, orderLife / .7f);
+                orderLife -= dt; orderMarker.localScale = Vector3.one * (ReducedMotion ? .85f : Mathf.Lerp(.65f, 1.1f, orderLife / .7f));
                 if (orderLife <= 0) orderMarker.gameObject.SetActive(false);
             }
         }
@@ -506,16 +670,33 @@ namespace Tablefront
             foreach (var m in pointViews.Values) if (m.Root != null) Destroy(m.Root);
             foreach (var m in headquarters.Values) if (m.Root != null) Destroy(m.Root);
             miniatures.Clear(); pointViews.Clear(); headquarters.Clear(); worldLabels.Clear();
-            foreach (var e in effects) if (e != null) { e.Life = 0; e.Trace.enabled = false; e.Impact.gameObject.SetActive(false); }
+            foreach (var e in effects) if (e != null) { e.Life = 0; e.Trace.enabled = false; e.Impact.gameObject.SetActive(false); e.Chip.gameObject.SetActive(false); }
+            foreach (var guide in orderGuides) if (guide != null) { guide.Line.enabled = false; guide.Marker.gameObject.SetActive(false); guide.Count = 0; }
+            foreach (var wreck in wrecks) if (wreck != null) { wreck.Life = 0; wreck.Root.gameObject.SetActive(false); }
+            foreach (var voice in voices) if (voice != null) voice.Stop();
+            if (cueAudio != null) cueAudio.Stop();
+            if (coverRoot != null) Destroy(coverRoot.gameObject);
+            coverRoot = null; coverSimulation = null;
+            lightCooldown = heavyCooldown = 0;
             orderLife = 0; if (orderMarker != null) orderMarker.gameObject.SetActive(false);
         }
 
         void AudioSetup()
         {
-            combatAudio = gameObject.AddComponent<AudioSource>(); combatAudio.playOnAwake = false; combatAudio.spatialBlend = 0; combatAudio.volume = .65f;
-            lightShot = Synth("Dry rifle burst", .09f, 130, .72f);
-            heavyShot = Synth("Miniature cannon", .29f, 68, .6f);
-            deathSound = Synth("Metallic impact", .34f, 95, .8f);
+            for (int i = 0; i < voices.Length; i++)
+            {
+                var source = new GameObject("Battlefield audio voice " + (i + 1)).AddComponent<AudioSource>();
+                source.transform.SetParent(transform, false); source.playOnAwake = false; source.spatialBlend = 0;
+                source.priority = 150; source.dopplerLevel = 0; voices[i] = source;
+            }
+            cueAudio = gameObject.AddComponent<AudioSource>(); cueAudio.playOnAwake = false; cueAudio.spatialBlend = 0; cueAudio.volume = .25f;
+            scoutShot = Synth("Recon chatter", .065f, 210, .58f);
+            lightShot = Synth("Dry rifle burst", .11f, 145, .75f);
+            heavyShot = Synth("Miniature cannon", .38f, 58, .52f);
+            deathSound = Synth("Metallic impact", .32f, 82, .65f);
+            recruitCue = Chime("Reinforcements ready", new[] { 440f, 660f }, .075f);
+            captureCue = Chime("Beacon secured", new[] { 523f, 659f, 784f }, .1f);
+            lostCue = Chime("Beacon lost", new[] { 440f, 330f }, .12f);
             ambience = gameObject.AddComponent<AudioSource>(); ambience.playOnAwake = false; ambience.loop = true; ambience.spatialBlend = 0; ambience.volume = .035f;
             const int rate = 22050; var samples = new float[rate * 6]; var random = new System.Random(52); float brown = 0;
             for (var i = 0; i < samples.Length; i++) { brown = Mathf.Clamp((brown + ((float)random.NextDouble() * 2 - 1) * .025f) * .995f, -.2f, .2f); float fade = Mathf.Min(1, Mathf.Min(i / 110f, (samples.Length - 1 - i) / 110f)); samples[i] = (brown + Mathf.Sin(i * .0006f) * .018f) * fade; }
@@ -531,6 +712,21 @@ namespace Tablefront
                 float fade = Mathf.Min(1, Mathf.Min(i / 110f, (count - 1 - i) / 110f));
                 data[i] = signal * Mathf.Exp(-p * 7) * fade * .7f;
             }
+            var clip = AudioClip.Create(name, count, 1, rate, false); clip.SetData(data, 0); return clip;
+        }
+
+        static AudioClip Chime(string name, float[] notes, float duration)
+        {
+            const int rate = 22050;
+            int noteLength = Mathf.CeilToInt(duration * rate), count = noteLength * notes.Length;
+            var data = new float[count];
+            for (int note = 0; note < notes.Length; note++)
+                for (int i = 0; i < noteLength; i++)
+                {
+                    float t = i / (float)rate, progress = i / (float)noteLength;
+                    float edgeFade = Mathf.Min(1, Mathf.Min(i / 110f, (noteLength - 1 - i) / 110f));
+                    data[note * noteLength + i] = Mathf.Sin(2 * Mathf.PI * notes[note] * t) * Mathf.Exp(-progress * 3.8f) * edgeFade * .55f;
+                }
             var clip = AudioClip.Create(name, count, 1, rate, false); clip.SetData(data, 0); return clip;
         }
 
@@ -611,7 +807,8 @@ namespace Tablefront
             foreach (var m in ownedMaterials) if (m != null) Destroy(m);
             foreach (var m in ownedMeshes) if (m != null) Destroy(m);
             foreach (var t in ownedTextures) if (t != null) Destroy(t);
-            if (lightShot != null) Destroy(lightShot); if (heavyShot != null) Destroy(heavyShot); if (deathSound != null) Destroy(deathSound);
+            if (scoutShot != null) Destroy(scoutShot); if (lightShot != null) Destroy(lightShot); if (heavyShot != null) Destroy(heavyShot); if (deathSound != null) Destroy(deathSound);
+            if (recruitCue != null) Destroy(recruitCue); if (captureCue != null) Destroy(captureCue); if (lostCue != null) Destroy(lostCue);
             if (ambience != null && ambience.clip != null) Destroy(ambience.clip);
         }
     }
