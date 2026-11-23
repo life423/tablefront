@@ -26,7 +26,7 @@ Evidence: [new runtime checks](../TestResults/tactical-runtime.txt), [original r
 
 Virtual devices/routing, temporary GameView sizes, background-run overrides and auto-tick were restored. QA scripts are outside Assets and are not shipped. The first legacy runtime invocation used an empty Editor scene and was discarded; final checks ran the real Tablefront scene. A cover-count assertion initially observed Unity's deferred-destruction objects in the same frame; it was corrected to wait for normal cleanup. Failed attempts are not reported as passes.
 
-Unity saved the existing `InputSystem_Actions` asset as a preloaded asset while serializing player settings; no input package or new action asset was added. The installed desktop shortcut was launched and its native title menu visually inspected after scene initialization; no keyboard or mouse input was sent to the native game. See [native startup evidence](../TestResults/tactical-native-startup.json).
+Unity temporarily serialized the existing `InputSystem_Actions` preload during verification and restored the original empty preload list when the agent-owned Editor closed. That cleanup is retained; no input package or new action asset was added. The installed desktop shortcut was launched and its native title menu visually inspected after scene initialization; no keyboard or mouse input was sent to the native game. See [native startup evidence](../TestResults/tactical-native-startup.json).
 
 ## Craft review and remaining work
 
