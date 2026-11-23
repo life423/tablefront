@@ -57,7 +57,7 @@ namespace Tablefront
                     case 3: return "Click Recruit Rifles below. It spends credits and places a new rifle squad at your blue headquarters.";
                     case 4: return "Click the orange practice unit. Your selected troops move into range and fire automatically. Destroy it to continue.";
                     case 5: return "Click Rifles below, then click the marked cover position. A brass ring shows when a rifle squad is protected.";
-                    default: return "You can select, move, capture, recruit, attack and use cover. Play a battle starts a fresh match against two AI commanders.";
+                    default: return "You can select, move, capture, recruit, attack and use cover. Select Play a battle to start a fresh match against two AI commanders.";
                 }
             }
         }
@@ -146,7 +146,8 @@ namespace Tablefront
         string tacticalAlert = "";
         Vector2 alertPosition;
         int alertPriority;
-        bool startedAsSpectator, tutorialMoveIssued, tutorialRecruited, tutorialAttackIssued, tutorialCoverIssued;
+        bool startedAsSpectator, tutorialMoveIssued, tutorialRecruited, tutorialCoverIssued;
+        Troop tutorialEnemy;
         readonly HashSet<int> tutorialMovingUnits = new HashSet<int>();
         readonly Vector2 tutorialMoveTarget = new Vector2(-7, -13);
         Vector2 tutorialEnemyPosition;
@@ -244,8 +245,8 @@ namespace Tablefront
             StartBattle(false);
             TutorialActive = true; TutorialStep = 0;
             Sim.PracticeMode = true;
-            tutorialMoveIssued = tutorialRecruited = tutorialAttackIssued = tutorialCoverIssued = false;
-            tutorialEnemyId = -1; tutorialMovingUnits.Clear(); tutorialFeedbackUntil = 0;
+            tutorialMoveIssued = tutorialRecruited = tutorialCoverIssued = false;
+            tutorialEnemyId = -1; tutorialEnemy = null; tutorialMovingUnits.Clear(); tutorialFeedbackUntil = 0;
             foreach (var army in Sim.Armies) { army.IsAI = false; army.TurretTimer = 99999; }
             Sim.Units.RemoveAll(u => u.Team != 0);
             World.ClearBattle();
@@ -282,12 +283,12 @@ namespace Tablefront
                         AdvanceTutorial("Rifles recruited at your HQ.");
                     break;
                 case 4:
-                    var enemy = Sim.Units.FirstOrDefault(u => u.Id == tutorialEnemyId && u.Alive);
-                    if (enemy == null)
-                    {
-                        if (tutorialAttackIssued) AdvanceTutorial("Target destroyed. Troops fire automatically.");
-                        else { CreateTutorialTarget(); RecenterTutorial(); }
-                    }
+                    // Combat removes dead units from the simulation list. Keep the target
+                    // reference so a real kill counts even when troops fired automatically.
+                    if (tutorialEnemy != null && !tutorialEnemy.Alive)
+                        AdvanceTutorial("Target destroyed. Troops fire automatically.");
+                    else if (!Sim.Units.Any(u => u.Id == tutorialEnemyId && u.Alive))
+                    { CreateTutorialTarget(); RecenterTutorial(); }
                     break;
                 case 5:
                     if (tutorialCoverIssued && Sim.Units.Any(u => u.Alive && u.Team == 0 && u.Kind == UnitKind.Rifle && Selected.Contains(u.Id) &&
@@ -317,7 +318,7 @@ namespace Tablefront
             if (tutorialEnemyPosition == default) tutorialEnemyPosition = candidates.OrderByDescending(p => Sim.Units.Where(u => u.Alive && u.Team == 0).Select(u => Vector2.Distance(u.Position, p)).DefaultIfEmpty(99).Min()).First();
             enemy.Position = enemy.Destination = tutorialEnemyPosition;
             enemy.HasOrder = false; enemy.AttackMove = false; enemy.WeaponTimer = 99999;
-            tutorialEnemyId = enemy.Id; tutorialAttackIssued = false;
+            tutorialEnemyId = enemy.Id; tutorialEnemy = enemy;
         }
         Vector2 FriendlyCentre()
         {
@@ -449,7 +450,6 @@ namespace Tablefront
             {
                 if (TutorialStep == 1 && targetId < 0 && Vector2.Distance(location, tutorialMoveTarget) <= 2.5f)
                 { tutorialMoveIssued = true; tutorialMovingUnits.Clear(); tutorialMovingUnits.UnionWith(Selected); }
-                if (TutorialStep == 4 && targetId == tutorialEnemyId) tutorialAttackIssued = true;
                 if (TutorialStep == 5 && targetId < 0 && Vector2.Distance(location, Sim.CoverZones[0].Position) <= Sim.CoverZones[0].Radius &&
                     Sim.Units.Any(u => u.Alive && u.Kind == UnitKind.Rifle && Selected.Contains(u.Id))) tutorialCoverIssued = true;
             }
@@ -600,6 +600,12 @@ namespace Tablefront
             if (TutorialActive && Selected.Count > 0 && (TutorialStep == 1 || TutorialStep == 2 || TutorialStep == 5) &&
                 TryGround(screen, out var lessonGround) && Vector2.Distance(lessonGround, TutorialTargetPosition) <= TutorialTargetRadius)
             { IssueOrder(TutorialTargetPosition); return; }
+            if (TutorialActive && TutorialStep == 4 && Selected.Count > 0 && tutorialEnemy != null && tutorialEnemy.Alive)
+            {
+                Vector3 targetScreen = ViewCamera.WorldToScreenPoint(new Vector3(tutorialEnemy.Position.x, .6f, tutorialEnemy.Position.y));
+                if (targetScreen.z > 0 && ((Vector2)targetScreen - screen).sqrMagnitude <= 25 * 25)
+                { IssueOrder(tutorialEnemy.Position, tutorialEnemy.Id); return; }
+            }
             int friendly = NearestAt(screen, true, 25), enemy = NearestAt(screen, false, 25);
             float DistanceTo(int id)
             {

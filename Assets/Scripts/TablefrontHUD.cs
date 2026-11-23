@@ -421,7 +421,7 @@ namespace Tablefront
             tutorialCard.gameObject.SetActive(showTutorial);
             if (showTutorial)
             {
-                Set(tutorialProgress, game.TutorialStep >= 6 ? "TUTORIAL COMPLETE" : $"TUTORIAL / {game.TutorialStep + 1} OF 6");
+                Set(tutorialProgress, game.TutorialStep >= 6 ? "TUTORIAL COMPLETE" : $"TUTORIAL — STEP {game.TutorialStep + 1} OF 6");
                 Set(tutorialTitle, game.TutorialTitle);
                 Set(tutorialInstruction, game.TutorialInstruction);
                 Set(tutorialFeedback, game.TutorialFeedback);

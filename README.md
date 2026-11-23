@@ -2,14 +2,14 @@
 
 A Windows tabletop RTS made in Unity. Command a miniature army against two neural commanders, or watch all three fight through self-play tactics.
 
-The **0.4.0 visual playtest** develops a painted miniature-tabletop look with custom detailed models, articulated infantry, blended terrain, surface maps and captured studio reflections in URP. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.4.0-preview.1/Tablefront-Setup-v0.4.0.exe) or read the [visual update](Docs/PREMIUM_TABLETOP.md). It includes the StarCraft-style groups, mouse-first commands, separate six-task tutorial and [earlier tactical improvements](Docs/TACTICAL_UPDATE.md). The stable release remains 0.2.1 while these changes receive human playtesting.
+The **0.4.1 playtest** fixes the tutorial's repeating attack lesson and clarifies its step heading. It retains the painted miniature-tabletop look introduced in 0.4.0, with custom detailed models, articulated infantry, blended terrain, surface maps and captured studio reflections in URP. [Download the preview installer](https://github.com/life423/tablefront/releases/download/v0.4.1-preview.1/Tablefront-Setup-v0.4.1.exe), read the [tutorial fix](Docs/RELEASE_v0.4.1.md), or see the [visual update](Docs/PREMIUM_TABLETOP.md). It includes the StarCraft-style groups, mouse-first commands, separate six-task tutorial and [earlier tactical improvements](Docs/TACTICAL_UPDATE.md). The stable release remains 0.2.1 while these changes receive human playtesting.
 
 ![Tablefront painted campaign board](Docs/Images/premium-battle-1280.png)
 
 ## Play
 
-1. [Download the 0.4.0 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.4.0-preview.1/Tablefront-Setup-v0.4.0.exe).
-2. Double-click **Tablefront-Setup-v0.4.0.exe** and choose **Install**.
+1. [Download the 0.4.1 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.4.1-preview.1/Tablefront-Setup-v0.4.1.exe).
+2. Double-click **Tablefront-Setup-v0.4.1.exe** and choose **Install**.
 3. Open **Tablefront** from the desktop icon or Start menu.
 4. Choose **Tutorial · Start here** to learn by playing. After completing it, choose **Play a battle** for a fresh match. **Play vs AI** and **Watch AI battle** are also available on the title screen.
 
@@ -19,7 +19,7 @@ Unity, the .NET SDK, an account, and an internet connection are not required to 
 
 **Click a blue unit** to select it, or use **Scouts**, **Rifles**, **Tanks** or **Select whole army** below the table. Then **click the ground to move** or **click an enemy to attack**. Keep troops inside a beacon's ring to capture it; units fire automatically when in range. Beacons earn credits and victory points. Reach **350 points**, or destroy both enemy headquarters.
 
-Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.4.0 and retain the 0.3.2 group mapping.
+Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.4.1 and retain the 0.3.2 group mapping.
 
 ## Controls
 
@@ -58,7 +58,7 @@ To split your infantry into squads, drag-select some Rifles and press **Ctrl+1**
 
 Choose **Tutorial** on the title screen, **Start tutorial** in Help, or **Tutorial** while paused. Gold markers and one instruction at a time guide you through selecting troops, moving, capturing WEST, recruiting rifles, destroying a practice target and protecting rifles in cover. Each task waits for the action to happen in the real simulation.
 
-Practice has no opposing commander activity or score victory pressure. The attack target stays still and does not fire. **Show target** recenters the view; **Restart tutorial** starts the lesson over; **Exit tutorial** returns to the title. Finishing does not activate enemies on the practice table: **Play a battle** explicitly starts a fresh normal match. See the [tutorial guide](Docs/CONTROLS_TUTORIAL.md).
+Practice has no opposing commander activity or score victory pressure. The attack target stays still and does not fire. Destroying it completes step 5, including when your troops fire automatically. **Show target** recenters the view; **Restart tutorial** starts the lesson over; **Exit tutorial** returns to the title. After step 6, **Play a battle** explicitly starts a fresh normal match. See the [tutorial guide](Docs/CONTROLS_TUTORIAL.md).
 
 ## Neural commanders
 

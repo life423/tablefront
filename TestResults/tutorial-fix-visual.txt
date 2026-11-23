@@ -1,0 +1,16 @@
+state=tutorial0; step=0; practice=True; size=1024x768; frame=3926; overflowing=
+Captured tutorial0 1024x768
+state=tutorial4; step=4; practice=True; size=1024x768; frame=4079; overflowing=
+Captured tutorial4 1024x768
+state=tutorial6; step=6; practice=True; size=1024x768; frame=4236; overflowing=
+Captured tutorial6 1024x768
+state=tutorial0; step=0; practice=True; size=2560x1440; frame=4450; overflowing=
+Captured tutorial0 2560x1440
+state=tutorial4; step=4; practice=True; size=2560x1440; frame=4608; overflowing=
+Captured tutorial4 2560x1440
+state=tutorial6; step=6; practice=True; size=2560x1440; frame=4765; overflowing=
+Captured tutorial6 2560x1440
+Visual review: all six final frames inspected by root and/or copy reviewer.
+Initial 2560 attack/completion captures contained Pipeline text capture corruption; attack recaptured after screen warmup, completion recaptured first in fresh Play Mode. Final reviewed frames clean.
+Completion sentence revised and recaptured at 1024x768 and 2560x1440, with empty TMP overflow probes.
+Native tutorial visual rendering and FPS were not measured; no native gameplay input sent.

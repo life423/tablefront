@@ -41,16 +41,20 @@ public static class VerifyTutorialRecovery
             int targetId = game.TutorialTargetId;
             game.Sim.Units.RemoveAll(u => u.Id == targetId);
         }
-
-        try
+        void StartAttackLesson()
         {
-            game.ReducedMotion = true;
             game.StartTutorial();
             game.SelectAll(); Tick();
             game.IssueOrder(game.TutorialTargetPosition); Advance(2, 30);
             game.IssueOrder(game.TutorialTargetPosition); Advance(3, 35);
             game.Recruit(UnitKind.Rifle); Tick();
             Check(game.TutorialStep == 4 && Target() != null, "Attack task initially has a live marked practice target");
+        }
+
+        try
+        {
+            game.ReducedMotion = true;
+            StartAttackLesson();
 
             int firstTarget = game.TutorialTargetId;
             RemoveTarget(); Tick();
@@ -70,31 +74,19 @@ public static class VerifyTutorialRecovery
                 int missingId = game.TutorialTargetId;
                 var target = Target();
                 if (target == null) { replacementCycles = false; break; }
-                target.Health = 0;
-                game.Sim.Step(.05f); Tick();
+                RemoveTarget(); Tick();
                 replacementCycles &= game.TutorialStep == 4 && Target() != null && game.TutorialTargetId != missingId &&
                     game.Sim.Units.Count(u => u.Alive && u.Team == 1) == 1;
             }
-            Check(replacementCycles, "Ten repeated target losses recover exactly one target without hitting the army cap");
+            Check(replacementCycles, "Ten repeated removals of live targets recover exactly one target without hitting the army cap");
 
-            var automaticTarget = Target();
-            int automaticId = automaticTarget.Id;
-            int troopIndex = 0;
-            foreach (var unit in game.Sim.Units.Where(u => u.Alive && u.Team == 0))
-            {
-                unit.Position = automaticTarget.Position + new Vector2(-2.5f, (troopIndex++ - 3) * .5f);
-                unit.Destination = unit.Position; unit.HasOrder = false; unit.AttackTargetId = -1;
-                SetWeapon(unit, 0);
-            }
-            bool autoKilled = false;
-            for (int i = 0; i < 100 && !autoKilled; i++)
-            {
-                game.Sim.Step(.05f);
-                autoKilled = !game.Sim.Units.Any(u => u.Id == automaticId && u.Alive);
-                Tick();
-            }
-            Check(autoKilled && game.TutorialStep == 4 && Target() != null && game.TutorialTargetId != automaticId,
-                "Automatic fire before an explicit attack cannot leave the lesson without a target or skip it");
+            game.SelectAll();
+            Check(game.IssueOrder(game.TutorialTargetPosition, game.TutorialTargetId),
+                "Recovered target accepts an explicit attack order");
+            int orderedTargetId = game.TutorialTargetId;
+            RemoveTarget(); Tick();
+            Check(game.TutorialStep == 4 && Target() != null && game.TutorialTargetId != orderedTargetId,
+                "A missing live target after an attack order is replaced rather than counted as a kill");
 
             foreach (var unit in game.Sim.Units.Where(u => u.Alive && u.Team == 0))
             { unit.Position = unit.Destination = new Vector2(22, 18); unit.HasOrder = false; unit.AttackTargetId = -1; }
@@ -124,14 +116,47 @@ public static class VerifyTutorialRecovery
             Check(!game.Sim.Finished && game.TutorialStep == 4 && Target() != null,
                 "Long practice remains recoverable with a live target and no victory pressure");
 
-            game.SelectAll();
-            Check(game.IssueOrder(game.TutorialTargetPosition, game.TutorialTargetId),
-                "Recovered target accepts an explicit attack order");
-            Advance(5, 70);
+            var automaticTarget = Target();
+            int automaticId = automaticTarget.Id;
+            int troopIndex = 0;
+            foreach (var unit in game.Sim.Units.Where(u => u.Alive && u.Team == 0))
+            {
+                unit.Position = automaticTarget.Position + new Vector2(-2.5f, (troopIndex++ - 3) * .5f);
+                unit.Destination = unit.Position; unit.HasOrder = false; unit.AttackTargetId = -1;
+                SetWeapon(unit, 0);
+            }
+            bool autoKilled = false;
+            for (int i = 0; i < 100 && !autoKilled; i++)
+            {
+                game.Sim.Step(.05f);
+                autoKilled = !game.Sim.Units.Any(u => u.Id == automaticId && u.Alive);
+                Tick();
+            }
+            for (int i = 0; i < 20; i++) { game.Sim.Step(.05f); Tick(); }
+            Check(autoKilled && game.TutorialStep == 5 && !game.Sim.Units.Any(u => u.Alive && u.Team == 1),
+                "Automatic fire completes the attack lesson once without respawning a defeated target");
             game.SelectKind(UnitKind.Rifle);
             game.IssueOrder(game.TutorialTargetPosition); Advance(6, 60);
             Check(game.TutorialActive && game.Sim.PracticeMode,
-                "Recovered attack and cover lessons finish on the safe practice table");
+                "Automatic-fire attack and cover lessons reach the safe tutorial completion screen");
+
+            StartAttackLesson();
+            game.SelectAll();
+            var clickedTarget = Target();
+            var selectedIds = game.Selected.ToArray();
+            var overlappingFriendly = game.Sim.Units.First(u => u.Team == 0 && u.Alive);
+            overlappingFriendly.Position = overlappingFriendly.Destination = clickedTarget.Position;
+            var targetScreen = game.ViewCamera.WorldToScreenPoint(new Vector3(clickedTarget.Position.x, .6f, clickedTarget.Position.y));
+            game.ClickWorld(targetScreen);
+            Check(game.Selected.SetEquals(selectedIds) &&
+                game.Sim.Units.Where(u => selectedIds.Contains(u.Id)).All(u => u.AttackTargetId == clickedTarget.Id),
+                "Clicking the marked target orders an attack even when a friendly troop overlaps it");
+            Advance(5, 70);
+            game.SelectKind(UnitKind.Rifle);
+            game.IssueOrder(game.TutorialTargetPosition); Advance(6, 60);
+            game.CompleteTutorial();
+            Check(game.TutorialCompleted && !game.TutorialActive && !game.InMenu && !game.Sim.PracticeMode,
+                "Play a battle ends the completed tutorial and starts an ordinary match");
 
             var ordinary = new BattleSimulation(false, 491);
             ordinary.UseExternalAI = true;
