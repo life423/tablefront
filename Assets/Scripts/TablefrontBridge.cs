@@ -38,18 +38,23 @@ namespace Tablefront
         readonly float[] cooldowns = new float[2];
         readonly HashSet<int> warnedRiders = new HashSet<int>();
         readonly Dictionary<int, Vector2> riding = new Dictionary<int, Vector2>();
-        readonly Vector2[] nodes = new Vector2[4];
-        readonly float[] distances = new float[4];
-        readonly int[] previous = new int[4];
-        readonly bool[] visited = new bool[4];
-        readonly int[] reversePath = new int[4];
+        readonly Vector2[] nodes = new Vector2[12];
+        readonly float[] distances = new float[12];
+        readonly int[] previous = new int[12];
+        readonly bool[] visited = new bool[12];
+        readonly int[] reversePath = new int[12];
         readonly Vector2[] segmentIntervals = new Vector2[3];
+        readonly List<Vector2> movementPath = new List<Vector2>(12);
+        readonly TablefrontTactics tactics;
         float phaseTime, movementStartAngle, dockingGrace;
+
+        public TablefrontBridge(TablefrontTactics tactics = null) { this.tactics = tactics; }
 
         public int CommandsRemaining(int team) => team >= 0 && team < 2 ? commands[team] : 0;
         public float CooldownRemaining(int team) => team >= 0 && team < 2 ? Mathf.Max(cooldowns[team], dockingGrace) : 0;
         public bool IsRiding(int id) => Phase == BridgePhase.Moving && riding.ContainsKey(id);
         public static float RouteAngle(BridgeRoute route) => route == BridgeRoute.North ? NorthAngle : SouthAngle;
+        internal void RestoreCommand(int team) { if (team >= 0 && team < 2) commands[team] = Mathf.Min(CommandsPerTeam, commands[team] + 1); }
 
         public bool TryRequest(int team, BridgeRoute route, IList<Troop> units)
         {
@@ -79,7 +84,15 @@ namespace Tablefront
                 {
                     Troop unit = units[i];
                     if (unit.Alive && warnedRiders.Contains(unit.Id) && OnBridge(unit.Position, BattleSimulation.UnitRadius(unit.Kind)))
-                        riding[unit.Id] = ToLocal(unit.Position, movementStartAngle);
+                    {
+                        float radius = BattleSimulation.UnitRadius(unit.Kind);
+                        Vector2 local = ToLocal(unit.Position, movementStartAngle);
+                        // Membership admits a sub-millimetre numerical tolerance. Keep a
+                        // captured edge passenger inside that tolerance throughout rotation.
+                        local.x = Mathf.Clamp(local.x, -HalfLength + radius + .0001f, HalfLength - radius - .0001f);
+                        local.y = Mathf.Clamp(local.y, -HalfWidth + radius + .0001f, HalfWidth - radius - .0001f);
+                        riding[unit.Id] = local;
+                    }
                 }
                 Revision++;
                 return;
@@ -110,13 +123,15 @@ namespace Tablefront
         public bool IsWalkable(Vector2 position, float radius = 0, bool includeBridge = true)
         {
             if (!Finite(position) || Mathf.Abs(position.x) > 24.001f || Mathf.Abs(position.y) > 24.001f) return false;
-            return Mathf.Abs(position.x) >= RiverHalfWidth + radius - .0005f || includeBridge && OnBridge(position, radius);
+            return (Mathf.Abs(position.x) >= RiverHalfWidth + radius - .0005f || includeBridge && OnBridge(position, radius)) &&
+                (tactics == null || tactics.IsWalkable(position, radius));
         }
 
         /// <summary>Orders into water snap to the closest legal bank or docked bridge, never across the river.</summary>
         public Vector2 ProjectDestination(Vector2 position, float radius)
         {
             position = new Vector2(Mathf.Clamp(position.x, -24, 24), Mathf.Clamp(position.y, -24, 24));
+            if (tactics != null) position = tactics.Project(position, radius);
             if (IsWalkable(position, radius)) return position;
             Vector2 bank = new Vector2((position.x < 0 ? -1 : 1) * (RiverHalfWidth + radius + .002f), position.y);
             Vector2 local = ToLocal(position, AngleDegrees);
@@ -143,25 +158,52 @@ namespace Tablefront
 
         public Vector2 NextWaypoint(Troop unit, Vector2 desired, float radius, out bool finalDestination)
         {
-            bool deckAllowed = Phase == BridgePhase.Stable || Phase == BridgePhase.Warning && warnedRiders.Contains(unit.Id);
-            unit.WaitingForBridge = false;
-            desired = ProjectDestination(desired, radius);
-            finalDestination = true;
-            if (SegmentWalkable(unit.Position, desired, radius, deckAllowed)) return desired;
+            BuildRoute(unit, unit.Position, desired, radius, movementPath, out bool waiting);
+            unit.WaitingForBridge = waiting;
+            if (movementPath.Count < 2) { finalDestination = !waiting; return unit.Position; }
+            finalDestination = movementPath.Count == 2 && !waiting;
+            return movementPath[1];
+        }
 
-            // Four-node visibility graph: both points plus the two radius-safe landings.
-            // Banks and the deck are convex; these portals connect their overlap regions.
-            nodes[0] = unit.Position; nodes[1] = desired;
+        /// <summary>Pure route query, including a legal safe approach when the crossing is closed.</summary>
+        public void BuildRoute(Troop unit, Vector2 origin, Vector2 desired, float radius, List<Vector2> output, out bool waiting)
+        {
+            output.Clear(); output.Add(origin); waiting = false;
+            bool deckAllowed = Phase == BridgePhase.Stable || Phase == BridgePhase.Warning && unit != null && warnedRiders.Contains(unit.Id);
+            desired = ProjectDestination(desired, radius);
+            if (FindRoute(origin, desired, radius, deckAllowed, output)) return;
+            waiting = true;
+            if (Mathf.Abs(origin.x) < RiverHalfWidth + radius) return;
+            int side = origin.x < 0 ? -1 : 1;
+            Vector2 wait = Portal(side, radius, CurrentRoute); wait.x += side * .8f;
+            FindRoute(origin, wait, radius, deckAllowed, output);
+        }
+
+        bool FindRoute(Vector2 origin, Vector2 desired, float radius, bool deckAllowed, List<Vector2> output)
+        {
+            if (SegmentWalkable(origin, desired, radius, deckAllowed))
+            { if ((desired - origin).sqrMagnitude > .000001f) output.Add(desired); return true; }
+            // Exact visibility graph through landing overlaps and expanded obstacle corners.
+            nodes[0] = origin; nodes[1] = desired;
             nodes[2] = Portal(-1, radius, CurrentRoute); nodes[3] = Portal(1, radius, CurrentRoute);
-            for (int i = 0; i < 4; i++) { distances[i] = float.PositiveInfinity; previous[i] = -1; visited[i] = false; }
+            int nodeCount = 4;
+            if (tactics != null)
+                for (int obstacleIndex = 0; obstacleIndex < tactics.Obstacles.Count; obstacleIndex++)
+                {
+                    var obstacle = tactics.Obstacles[obstacleIndex];
+                    Vector2 extent = obstacle.HalfSize + Vector2.one * (radius + .035f);
+                    for (int x = -1; x <= 1; x += 2)
+                        for (int y = -1; y <= 1; y += 2) nodes[nodeCount++] = obstacle.ToWorld(new Vector2(extent.x * x, extent.y * y));
+                }
+            for (int i = 0; i < nodeCount; i++) { distances[i] = float.PositiveInfinity; previous[i] = -1; visited[i] = false; }
             distances[0] = 0;
-            for (int pass = 0; pass < 4; pass++)
+            for (int pass = 0; pass < nodeCount; pass++)
             {
                 int current = -1; float best = float.PositiveInfinity;
-                for (int i = 0; i < 4; i++) if (!visited[i] && distances[i] < best) { best = distances[i]; current = i; }
+                for (int i = 0; i < nodeCount; i++) if (!visited[i] && distances[i] < best) { best = distances[i]; current = i; }
                 if (current < 0 || current == 1) break;
                 visited[current] = true;
-                for (int next = 0; next < 4; next++)
+                for (int next = 0; next < nodeCount; next++)
                 {
                     if (visited[next] || next == current || !SegmentWalkable(nodes[current], nodes[next], radius, deckAllowed)) continue;
                     float cost = distances[current] + Vector2.Distance(nodes[current], nodes[next]);
@@ -171,22 +213,16 @@ namespace Tablefront
             if (previous[1] >= 0)
             {
                 int length = 0, at = 1;
-                while (at > 0 && length < 4) { reversePath[length++] = at; at = previous[at]; }
+                while (at > 0 && length < nodeCount) { reversePath[length++] = at; at = previous[at]; }
                 for (int i = length - 1; i >= 0; i--)
                 {
                     int node = reversePath[i];
-                    if ((nodes[node] - unit.Position).sqrMagnitude <= .16f && node != 1) continue;
-                    finalDestination = node == 1;
-                    return nodes[node];
+                    if ((nodes[node] - origin).sqrMagnitude <= .000001f && node != 1) continue;
+                    output.Add(nodes[node]);
                 }
-                return desired;
+                return true;
             }
-            // An order survives a closed crossing. Wait on its bank, then replan after docking.
-            unit.WaitingForBridge = true; finalDestination = false;
-            if (Mathf.Abs(unit.Position.x) < RiverHalfWidth + radius) return unit.Position;
-            int side = unit.Position.x < 0 ? -1 : 1;
-            Vector2 wait = Portal(side, radius, CurrentRoute); wait.x += side * .8f;
-            return wait;
+            return false;
         }
 
         public Vector2 ConstrainMovement(Troop unit, Vector2 proposed, float radius)
@@ -208,6 +244,7 @@ namespace Tablefront
         bool SegmentWalkable(Vector2 from, Vector2 to, float radius, bool includeBridge)
         {
             if (!IsWalkable(from, radius, includeBridge) || !IsWalkable(to, radius, includeBridge)) return false;
+            if (tactics != null && !tactics.SegmentClear(from, to, radius)) return false;
             Vector2 delta = to - from;
             int count = 0;
             float lo = 0, hi = 1, bankEdge = RiverHalfWidth + radius - .0005f;

@@ -1,0 +1,49 @@
+PASS No selection means no planning clutter
+PASS A friendly click still selects one troop
+PASS Hover shows a valid contextual formation and route before ordering
+PASS Planning preview never mutates the simulation order or waiting state
+PASS A plain ground click starts a movement order without a queue
+PASS Shift preview begins at the current order endpoint
+PASS Shift left-click queues a waypoint without replacing the current order
+PASS Further Shift previews begin at the queue tail
+PASS Shift right-click provides the same waypoint alternative
+PASS Accepted routes persist only for the selected live force
+PASS Shift on a friendly remains additive selection rather than a waypoint
+PASS A plain destination replaces selected troops' entire prior plan
+PASS Group queue count reports one waypoint rather than one per troop
+PASS Visible Move action can target occupied ground without accidentally selecting its friendly occupant
+PASS Armed attack-move propagates Shift into the queued command
+PASS Escape cancels the pending Move action before opening Pause
+PASS S stops the force and clears all queued orders
+PASS H holds without retaining a hidden movement plan
+PASS A full bounded plan rejects extra orders with visible feedback and retains the plan
+PASS A full plan is visibly unavailable before the extra click
+PASS Releasing Shift makes replacement immediately available after a full plan
+PASS Queued attack fixture has a genuinely unfinished movement order
+PASS Shift clicking an enemy queues a focus attack without replacing movement
+PASS A dead queued target is skipped and the later movement order still executes
+PASS Formation ghosts cover every live selected miniature even after selection order changes
+PASS Formation preview uses the actual assigned endpoint for unit 6
+PASS Formation preview uses the actual assigned endpoint for unit 5
+PASS Formation preview uses the actual assigned endpoint for unit 4
+PASS Formation preview uses the actual assigned endpoint for unit 3
+PASS Formation preview uses the actual assigned endpoint for unit 2
+PASS Formation preview uses the actual assigned endpoint for unit 1
+PASS Bridge route fixture points at visible empty bank ground rather than a nearby enemy
+PASS Bridge preview uses the exact legal movement graph rather than a straight line through water
+PASS Player can request the alternate bridge route through shared mission rules
+PASS A changing crossing keeps a valid bank order and shows a distinct waiting plan
+PASS Waiting path stops on the safe bank without drawing a fake water crossing
+PASS Accepting a blocked crossing explains that the saved order waits for docking
+PASS Invalid river destinations show an unavailable marker and cannot issue an order
+PASS Invalid water marker remains flat at the local floor rather than floating at wall height
+PASS Wall destination keeps its unavailable preview and explicit rejected-order feedback
+PASS Invalid wall cross is visibly above the physical wall and all vertices stay on one flat plane
+PASS Pause hides every planning renderer
+PASS Help hides every planning renderer
+PASS Dead selected troops leave no route or ghost renderers
+PASS Title menu hides all planning renderers
+PASS Planning renderers use a fixed bounded pool without per-order object growth
+PASS Accepted future-route cache updates immediately when a queued waypoint is added
+PASS Accepted future-route cache tracks a moving queued attack target immediately
+PASS Accepted future-route cache rebuilds the exact new geometry after bridge docking changes its revision

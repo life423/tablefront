@@ -13,7 +13,7 @@ $engineRoot = 'C:\Program Files\Unity\Hub\Editor\6000.6.10f1\Editor\Data\Managed
 $coreModule = Join-Path $engineRoot 'UnityEngine.CoreModule.dll'
 $jsonModule = Join-Path $engineRoot 'UnityEngine.JSONSerializeModule.dll'
 $outputDll = Join-Path $testRoot 'neural-tests.dll'
-& dotnet 'C:\Program Files\dotnet\sdk\9.0.304\Roslyn\bincore\csc.dll' /nologo /noconfig /nostdlib /target:exe ('/out:' + $outputDll) @referenceArgs ('/reference:' + $coreModule) ('/reference:' + $jsonModule) (Join-Path $runtimeRoot 'BattleSimulation.cs') (Join-Path $runtimeRoot 'TablefrontBattlefields.cs') (Join-Path $runtimeRoot 'TablefrontBridge.cs') (Join-Path $runtimeRoot 'NeuralCommander.cs') (Join-Path $testRoot 'VerifyNeural.cs')
+& dotnet 'C:\Program Files\dotnet\sdk\9.0.304\Roslyn\bincore\csc.dll' /nologo /noconfig /nostdlib /target:exe ('/out:' + $outputDll) @referenceArgs ('/reference:' + $coreModule) ('/reference:' + $jsonModule) (Join-Path $runtimeRoot 'BattleSimulation.cs') (Join-Path $runtimeRoot 'TablefrontBattlefields.cs') (Join-Path $runtimeRoot 'TablefrontBridge.cs') (Join-Path $runtimeRoot 'TablefrontTactics.cs') (Join-Path $runtimeRoot 'NeuralCommander.cs') (Join-Path $testRoot 'VerifyNeural.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Neural verification compile failed' }
 Copy-Item -LiteralPath $coreModule -Destination (Join-Path $testRoot 'UnityEngine.CoreModule.dll') -Force
 Copy-Item -LiteralPath $jsonModule -Destination (Join-Path $testRoot 'UnityEngine.JSONSerializeModule.dll') -Force

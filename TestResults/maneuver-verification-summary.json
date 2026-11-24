@@ -1,0 +1,20 @@
+{
+  "policySHA256": "07ee559f4ae04a0023d0d451757a4bb2772e18c7aec1c52ca89eaefee3052181",
+  "trainingPerformed": false,
+  "totalPassing": 688.0,
+  "checks": {
+    "newSimulation": 56,
+    "bridgeSimulation": 57,
+    "mechanics": 63,
+    "tactics": 25,
+    "neural": 24,
+    "expandedMaps": 55,
+    "planningControls": 49,
+    "tacticalHUD": 27,
+    "tacticalArt": 33,
+    "bridgeController": 20,
+    "bridgeArt": 27,
+    "bridgeHUD": 25,
+    "existingRuntime": 227
+  }
+}

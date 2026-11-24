@@ -25,7 +25,7 @@ namespace Tablefront
         TextMeshProUGUI speedText, recruitStatus, orderText, roleText;
         UnityEngine.UI.Button[] squadButtons = new UnityEngine.UI.Button[5];
         TextMeshProUGUI[] squadText = new TextMeshProUGUI[5];
-        UnityEngine.UI.Button stopButton, holdButton, attackMoveButton, nextBattlefieldButton;
+        UnityEngine.UI.Button moveButton, stopButton, holdButton, attackMoveButton, nextBattlefieldButton;
         UnityEngine.UI.Button bridgeMissionButton, bridgeButton;
         RectTransform bridgePanel;
         TextMeshProUGUI bridgeGoal, bridgeState, bridgeDetail, bridgeBudget, bridgeButtonText, helpFooter, helpArmyShortcuts;
@@ -41,6 +41,10 @@ namespace Tablefront
         TextMeshProUGUI spectatorIntents;
         bool wasMenu, wasModal, wasHelp;
         bool built;
+        BattleSimulation feedbackSimulation;
+        float feedbackStamp = -1, feedbackUntil;
+        int feedbackUnit = -1;
+        string hitFeedback = "";
         CanvasGroup titleGroup, modalGroup, helpGroup;
         TMP_FontAsset font;
         static readonly string[] RecruitKeys = { "Z", "X", "C", "V", "B" };
@@ -117,7 +121,7 @@ namespace Tablefront
             bridgeMissionButton = Button(card, "Bridge Gambit · Try mission", game.StartBridgeMission, true);
             Top(bridgeMissionButton.GetComponent<RectTransform>(), 32, 476, 496, 48);
             bridgeMissionButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 22;
-            Label(card, "Move the crossing. Capture the enemy Depot.", 16, TablePalette.Muted, new Vector2(32, -532), new Vector2(496, 28));
+            Label(card, "Turn the bridge. Bypass the defended approach.", 16, TablePalette.Muted, new Vector2(32, -532), new Vector2(496, 28));
             tutorialButton = Button(card, "Tutorial", game.StartTutorial);
             Top(tutorialButton.GetComponent<RectTransform>(), 32, 568, 240, 44);
             tutorialButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20;
@@ -220,15 +224,18 @@ namespace Tablefront
             allArmyButton = Button(selectionActions, "Select whole army", game.SelectAll);
             allArmyButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 15;
             LayoutItem(allArmyButton.gameObject, 144, 42);
+            moveButton = Button(selectionActions, "Move", game.ArmMove);
+            moveButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 15;
+            LayoutItem(moveButton.gameObject, 72, 42);
             stopButton = Button(selectionActions, "Stop · S", game.StopSelected);
             stopButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 15;
-            LayoutItem(stopButton.gameObject, 86, 42);
+            LayoutItem(stopButton.gameObject, 70, 42);
             holdButton = Button(selectionActions, "Hold · H", game.HoldSelected);
             holdButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 15;
-            LayoutItem(holdButton.gameObject, 86, 42);
+            LayoutItem(holdButton.gameObject, 70, 42);
             attackMoveButton = Button(selectionActions, "Attack-move · A", game.ToggleAttackMove);
-            attackMoveButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 15;
-            LayoutItem(attackMoveButton.gameObject, 148, 42);
+            attackMoveButton.GetComponentInChildren<TextMeshProUGUI>().fontSize = 14;
+            LayoutItem(attackMoveButton.gameObject, 134, 42);
             var build = Container("Reinforcements", commandSection); Fraction(build, .455f, 1f, 14, 12);
             recruitStatus = Label(build, "REINFORCEMENTS  /  AT YOUR HQ", 13, TablePalette.Gold, new Vector2(0, 0), new Vector2(0, 22), FontStyles.Bold, .8f);
             SpanTop(recruitStatus.rectTransform, 0, 22);
@@ -320,8 +327,8 @@ namespace Tablefront
             bridgeButtonText = bridgeButton.GetComponentInChildren<TextMeshProUGUI>();
             bridgeButtonText.fontSize = 18;
             bridgeButton.GetComponent<TablefrontButtonFeedback>().KeepDisabledTextReadable = true;
-            bridgeBudget = Label(control, "", 14, TablePalette.Muted, new Vector2(0, -54), new Vector2(0, 28));
-            SpanTop(bridgeBudget.rectTransform, 54, 28);
+            bridgeBudget = Label(control, "", 14, TablePalette.Muted, new Vector2(0, -50), new Vector2(0, 38));
+            SpanTop(bridgeBudget.rectTransform, 50, 38);
             bridgePanel.gameObject.SetActive(false);
         }
 
@@ -357,7 +364,7 @@ namespace Tablefront
             var rule = Box("Controls rule", card, WithAlpha(TablePalette.Gold, .4f)); Top(rule, 36, 222, 948, 2);
             helpBasics = Container("Mouse controls", card); Top(helpBasics, 36, 244, 948, 250);
             HelpStep(helpBasics, "1", "Choose your troops", "Click a blue unit, drag a box, or use a unit-class button. Double-click a unit to select its visible class.", 0);
-            HelpStep(helpBasics, "2", "Give an order", "Click ground to move or an enemy to attack. Attack-move fights along the route; Hold keeps troops in place.", 82);
+            HelpStep(helpBasics, "2", "Plan your route", "Click ground to move or an enemy to attack. Hold Shift while clicking to queue orders; the route and formation show your plan.", 82);
             HelpStep(helpBasics, "3", "Add reinforcements", "Choose a unit under Recruit at your HQ. Scouts capture, rifles use cover, and support units need escorts.", 164);
             helpAdvanced = Container("Optional keyboard shortcuts", card); Top(helpAdvanced, 36, 244, 948, 250);
             helpArmyShortcuts = Label(helpAdvanced, "", 18, TablePalette.Text, Vector2.zero, new Vector2(482, 244));
@@ -441,8 +448,8 @@ namespace Tablefront
             helpAdvanced.gameObject.SetActive(advancedShortcuts);
             Set(helpHeading, advancedShortcuts ? "Optional shortcuts" : "Play with your mouse");
             Set(helpIntro, advancedShortcuts ? "Every essential command has a labeled button. Use these shortcuts when you are ready." : mission ? "Hold the enemy Depot uncontested for 45 seconds, or destroy its HQ. Enemy capture attempts reset the timer. Change the bridge crossing to open a different route." : "Capture beacons to earn credits and victory points. Reach 350 points, or be the last HQ standing.");
-            Set(helpArmyShortcuts, "Ctrl+0–9         Save / replace a group\nShift+0–9       Add selected to a group\n0–9 / double-tap   Select / center group\nA / S / H         Attack-move / Stop / Hold\n" + (mission ? "R                       Change bridge crossing\nZ / X / C         Recruit Scout / Rifle / Tank\n" : "Z / X / C         Recruit Scout / Rifle / Tank\nV / B               Recruit Gunner / Artillery\n") + "Ctrl+A              Select whole army\nShift+click       Add or remove a unit\nRight-click       Alternative move / attack");
-            Set(helpFooter, mission ? "Each side has three bridge commands. A move gives 3s warning, then carries riders to the new route.\nWater blocks movement. Troops reroute or wait for a safe crossing." : "Scouts capture. Rifles use cover. Tanks break armor. Gunners counter infantry. Artillery cannot fire up close.\nMouse controls are enough to play; shortcuts are optional.");
+            Set(helpArmyShortcuts, "Ctrl+0–9         Save / replace a group\nShift+0–9       Add selected to a group\n0–9 / double-tap   Select / center group\nA / S / H         Attack-move / Stop / Hold\n" + (mission ? "R                       Change bridge crossing\nZ / X / C         Recruit Scout / Rifle / Tank\n" : "Z / X / C         Recruit Scout / Rifle / Tank\nV / B               Recruit Gunner / Artillery\n") + "Ctrl+A              Select whole army\nShift+unit click  Add or remove a unit\nShift+ground     Queue the next order\nRight-click       Alternative move / attack");
+            Set(helpFooter, mission ? "Water blocks movement; stone screens block shots. Flank marked cover. Bridge moves warn riders for 3s.\nHold ROTARY uncontested for 20s: +1 bridge command, up to three. Riders travel with the bridge." : "Scouts capture. Rifles use cover. Tanks break armor. Gunners counter infantry. Artillery cannot fire up close.\nMouse controls are enough to play; hold Shift while giving an order to queue it.");
             Set(shortcutsButton.GetComponentInChildren<TextMeshProUGUI>(), advancedShortcuts ? "Mouse basics" : "Keyboard shortcuts");
             Set(tutorialButton.GetComponentInChildren<TextMeshProUGUI>(), game.TutorialCompleted ? "Tutorial" : "Tutorial  ·  Start here");
             var chosenBattlefield = TablefrontBattlefields.Get(game.SelectedBattlefield);
@@ -488,11 +495,13 @@ namespace Tablefront
                 scoreFill[i].anchorMax = new Vector2(Mathf.Clamp01(mission ? missionHold / BattleSimulation.MissionHoldRequired : team.Score / BattleSimulation.VictoryScore), 1);
             }
             Set(selectionText, CompactSelectionSummary());
-            Set(orderText, game.CommandHint);
+            Set(orderText, string.IsNullOrEmpty(game.PlanningHint) ? game.CommandHint : game.PlanningHint);
             int protectedCount = 0;
             foreach (var troop in sim.Units) if (troop.Alive && game.Selected.Contains(troop.Id) && sim.IsProtected(troop)) protectedCount++;
             bool artillerySelected = sim.Units.Exists(troop => troop.Alive && game.Selected.Contains(troop.Id) && troop.Kind == UnitKind.Artillery);
-            Set(roleText, game.Selected.Count == 0 ? "Double-click a unit to select its visible class" : artillerySelected ? "Artillery cannot fire at close targets" : protectedCount > 0 ? protectedCount + (protectedCount == 1 ? " rifle protected by cover" : " rifles protected by cover") : game.SelectedOrderSummary);
+            string tacticalFeedback = TacticalFeedback(sim, mission);
+            Set(roleText, tacticalFeedback.Length > 0 ? tacticalFeedback : game.QueuedCount > 0 ? (game.QueuedCount == 1 ? "1 order queued" : "Up to " + game.QueuedCount + " orders queued") + " · Stop clears the plan" : game.Selected.Count == 0 ? "Double-click a unit to select its visible class" : artillerySelected ? "Artillery cannot fire at close targets" : protectedCount > 0 ? protectedCount + (mission ? protectedCount == 1 ? " rifle in directional cover · flank to bypass" : " rifles in directional cover · flank to bypass" : protectedCount == 1 ? " rifle protected by cover" : " rifles protected by cover") : game.SelectedOrderSummary);
+            roleText.color = tacticalFeedback.Length > 0 ? TablePalette.Gold : TablePalette.Muted;
             bool canCommand = !menuVisible && !observer && !game.Paused && !helpVisible && !sim.Finished && army.Alive;
             for (int i = 0; i < squadButtons.Length; i++)
             {
@@ -506,7 +515,8 @@ namespace Tablefront
             allArmyButton.interactable = canCommand && sim.UnitCount(0) > 0;
             Primary(allArmyButton, game.TutorialActive && game.TutorialStep == 0);
             bool selected = canCommand && game.Selected.Count > 0;
-            stopButton.interactable = holdButton.interactable = attackMoveButton.interactable = selected;
+            moveButton.interactable = stopButton.interactable = holdButton.interactable = attackMoveButton.interactable = selected;
+            Primary(moveButton, game.MoveArmed);
             Primary(attackMoveButton, game.AttackMoveArmed);
             int selectedLive = 0, holding = 0;
             foreach (var troop in sim.Units)
@@ -571,10 +581,33 @@ namespace Tablefront
             RefreshBridge(mission, canCommand);
         }
 
+        string TacticalFeedback(BattleSimulation sim, bool mission)
+        {
+            if (feedbackSimulation != sim)
+            { feedbackSimulation = sim; feedbackStamp = -1; feedbackUntil = 0; feedbackUnit = -1; hitFeedback = ""; }
+            if (!mission || game.InMenu || game.Paused || game.HelpOpen || sim.Finished) return "";
+            if (feedbackStamp != sim.Elapsed)
+            {
+                feedbackStamp = sim.Elapsed;
+                foreach (var hit in sim.Events)
+                {
+                    if (!hit.ProtectedHit && !hit.FlankedHit) continue;
+                    bool outgoing = hit.Team == 0 && game.Selected.Contains(hit.ShooterId);
+                    bool incoming = hit.Team != 0 && game.Selected.Contains(hit.TargetId);
+                    if (!outgoing && !incoming) continue;
+                    feedbackUnit = outgoing ? hit.ShooterId : hit.TargetId;
+                    hitFeedback = outgoing ? hit.FlankedHit ? "Flank hit · enemy cover bypassed" : "Frontal cover reduced damage · try a flank"
+                        : hit.FlankedHit ? "Your rifle was flanked · cover bypassed" : "Frontal cover protected your rifle";
+                    feedbackUntil = Time.unscaledTime + 1.4f;
+                }
+            }
+            return game.Selected.Contains(feedbackUnit) && Time.unscaledTime < feedbackUntil ? hitFeedback : "";
+        }
+
         void RefreshBridge(bool mission, bool canCommand)
         {
             bridgePanel.gameObject.SetActive(mission);
-            if (!mission || game.Sim.Bridge == null) return;
+            if (!mission || game.Sim.Bridge == null) { if (game.World) game.World.SetBridgePlanning(false); return; }
             var bridge = game.Sim.Bridge;
             bool stable = bridge.Phase == BridgePhase.Stable;
             string current = bridge.CurrentRoute == BridgeRoute.North ? "North" : "South";
@@ -583,12 +616,27 @@ namespace Tablefront
             Set(bridgeGoal, "Hold the enemy Depot uncontested for 45s, or destroy its HQ.");
             Set(bridgeState, stable ? current + " crossing open" : bridge.Phase == BridgePhase.Warning ? actor + " · " + target + " opens in " + Mathf.CeilToInt(bridge.TimeToChange) + "s" : actor + " · bridge moving · " + Mathf.CeilToInt(bridge.TimeToChange) + "s");
             bridgeState.color = stable ? TablePalette.Text : TablePalette.Team(Mathf.Clamp(bridge.ActorTeam, 0, 1));
-            Set(bridgeDetail, stable ? "3s warning. Riders travel with the bridge." : bridge.Phase == BridgePhase.Warning ? "New troops wait. Riders stay aboard as it turns." : "Riders travel safely. Orders resume when docked.");
+            Set(bridgeDetail, stable ? "North: defended approach. South: flank.\n3s warning; riders travel with the bridge." : bridge.Phase == BridgePhase.Warning ? "New troops wait. Riders stay aboard as it turns." : "Riders travel safely. Orders resume when docked.");
             int remaining = bridge.CommandsRemaining(0), enemy = bridge.CommandsRemaining(1);
             float cooldown = bridge.CooldownRemaining(0);
-            Set(bridgeBudget, "Your commands " + remaining + " · Enemy " + enemy + (cooldown > 0 ? " · " + Mathf.CeilToInt(cooldown) + "s" : ""));
-            Set(bridgeButtonText, stable ? remaining <= 0 ? "No bridge commands left" : "Open " + target + " crossing · R" : "Opening " + target + " crossing");
+            var rotary = game.Sim.Points[2];
+            bool changingOwner = rotary.Owner >= 0 && rotary.CapturingTeam >= 0 && rotary.Owner != rotary.CapturingTeam;
+            string recharge = rotary.Contested || changingOwner ? "ROTARY contested · recharge resets" : rotary.Owner < 0 ? "Hold ROTARY: +1 command / 20s" : rotary.Owner == 0
+                ? remaining >= TablefrontBridge.CommandsPerTeam ? "ROTARY held · commands full" : "ROTARY: +1 in " + Mathf.CeilToInt(BattleSimulation.BridgeRechargeRequired - game.Sim.BridgeRechargeSeconds(0)) + "s"
+                : enemy >= TablefrontBridge.CommandsPerTeam ? "Enemy holds ROTARY · commands full" : "Enemy recharge: " + Mathf.CeilToInt(game.Sim.BridgeRechargeSeconds(1)) + "/20s";
+            Set(bridgeBudget, "Your commands " + remaining + " · Enemy " + enemy + (cooldown > 0 ? " · " + Mathf.CeilToInt(cooldown) + "s" : "") + "\n" + recharge);
+            Set(bridgeButtonText, stable ? remaining <= 0 ? "Hold ROTARY to recharge" : "Open " + target + " crossing · R" : "Opening " + target + " crossing");
             bridgeButton.interactable = canCommand && stable && remaining > 0 && cooldown <= 0;
+            var pointer = UnityEngine.InputSystem.Mouse.current;
+            bool preview = bridgeButton.interactable && ((pointer != null && RectTransformUtility.RectangleContainsScreenPoint(bridgeButton.GetComponent<RectTransform>(), pointer.position.ReadValue(), null)) ||
+                EventSystem.current != null && EventSystem.current.currentSelectedGameObject == bridgeButton.gameObject);
+            if (game.World) game.World.SetBridgePlanning(preview);
+            if (preview)
+            {
+                Set(bridgeState, current + " open · preview " + target);
+                bridgeState.color = TablePalette.Team(0);
+                Set(bridgeDetail, "Ghost shows the new landing.\nRiders travel with the bridge.");
+            }
         }
 
         string CompactSelectionSummary()

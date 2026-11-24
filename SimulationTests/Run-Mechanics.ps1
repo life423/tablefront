@@ -10,7 +10,7 @@ $referencePack = Get-ChildItem -LiteralPath 'C:\Program Files\dotnet\packs\Micro
 $referenceArgs = Get-ChildItem -LiteralPath (Join-Path $referencePack.FullName 'ref\net9.0') -Filter '*.dll' | ForEach-Object { '/reference:' + $_.FullName }
 $coreModule = 'C:\Program Files\Unity\Hub\Editor\6000.6.10f1\Editor\Data\Managed\UnityEngine\UnityEngine.CoreModule.dll'
 $outputDll = Join-Path $testRoot 'simulation-tests.dll'
-& dotnet 'C:\Program Files\dotnet\sdk\9.0.304\Roslyn\bincore\csc.dll' /nologo /noconfig /nostdlib /target:exe ('/out:' + $outputDll) @referenceArgs ('/reference:' + $coreModule) (Join-Path $runtimeRoot 'BattleSimulation.cs') (Join-Path $runtimeRoot 'TablefrontBattlefields.cs') (Join-Path $runtimeRoot 'TablefrontBridge.cs') (Join-Path $testRoot 'NeuralCommanderStub.cs') (Join-Path $testRoot 'VerifySimulation.cs')
+& dotnet 'C:\Program Files\dotnet\sdk\9.0.304\Roslyn\bincore\csc.dll' /nologo /noconfig /nostdlib /target:exe ('/out:' + $outputDll) @referenceArgs ('/reference:' + $coreModule) (Join-Path $runtimeRoot 'BattleSimulation.cs') (Join-Path $runtimeRoot 'TablefrontBattlefields.cs') (Join-Path $runtimeRoot 'TablefrontBridge.cs') (Join-Path $runtimeRoot 'TablefrontTactics.cs') (Join-Path $testRoot 'NeuralCommanderStub.cs') (Join-Path $testRoot 'VerifySimulation.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Mechanics compile failed' }
 Copy-Item -LiteralPath $coreModule -Destination (Join-Path $testRoot 'UnityEngine.CoreModule.dll') -Force
 '{"runtimeOptions":{"tfm":"net9.0","framework":{"name":"Microsoft.NETCore.App","version":"9.0.0"}}}' | Set-Content -LiteralPath (Join-Path $testRoot 'simulation-tests.runtimeconfig.json')

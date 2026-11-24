@@ -37,9 +37,9 @@ public static class PreparePremiumArt
             material.SetColor("_BaseColor", new Color(.4f, .55f, .5f)); material.SetFloat("_Smoothness", .6f);
             EditorUtility.SetDirty(material);
         }
-        PlayerSettings.bundleVersion = "0.6.0";
+        PlayerSettings.bundleVersion = "0.7.0";
         Tablefront.TablefrontGraphics.Configure();
         AssetDatabase.SaveAssets();
-        return "Premium surface variants retained: normal+metallic/smoothness, with/without occlusion; build version 0.6.0.";
+        return "Premium surface variants retained: normal+metallic/smoothness, with/without occlusion; build version 0.7.0.";
     }
 }

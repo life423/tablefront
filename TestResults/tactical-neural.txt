@@ -1,0 +1,27 @@
+PASS exported learned policy loads in actual runtime inference
+PASS runtime model schema40x32x10
+PASS trainer and runtime probability error below1e-5 over10k observations
+PASS trainer and runtime sample identical actions over10k sharedRNG draws
+PASS invalid observation size rejected
+PASS nonfinite observation rejected
+PASS NaN policy weights rejected
+PASS infinite policy weights rejected
+PASS malformed policy dimensions rejected
+PASS runtime all-neural rollout1 maintains board bounds
+PASS runtime all-neural rollout2 maintains board bounds
+PASS runtime all-neural rollout3 maintains board bounds
+PASS runtime all-neural rollout4 maintains board bounds
+PASS runtime all-neural rollout5 maintains board bounds
+PASS runtime all-neural rollout6 maintains board bounds
+PASS runtime all-neural rollout7 maintains board bounds
+PASS runtime all-neural rollout8 maintains board bounds
+PASS runtime all-neural rollout9 maintains board bounds
+PASS runtime all-neural rollout10 maintains board bounds
+PASS runtime all-neural rollout11 maintains board bounds
+PASS runtime all-neural rollout12 maintains board bounds
+PASS all12 same-policy neural battles reach normal victory without forced ranking
+PASS all12 neural battles capture ground and produce100+ combat events
+PASS all36 neural commanders move army centroid6+ units fromHQ
+Probability maximum absolute error 2.68221E-007; sampled action mismatches 0/10000
+Actual runtime neural rollouts: 12/12 finished, 12 capture, 12 combat, 36/36 mobile commanders
+PASS 24 checks

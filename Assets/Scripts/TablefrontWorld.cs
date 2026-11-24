@@ -14,7 +14,10 @@ namespace Tablefront
         {
             public GameObject Root, Selection, Flash, Cover, Damage;
             public Transform Hull, HealthRoot, HealthFill, Barrel;
-            public float Recoil, PreviousHealth, DamageLife;
+            public MeshFilter CoverMesh;
+            public Renderer CoverRenderer;
+            public float Recoil, PreviousHealth, DamageLife, CoverHitLife;
+            public bool LastHitFlanked;
             public UnitKind Kind;
             public Vector3 Previous;
             public TablefrontMiniatureArt.Rig Art;
@@ -70,6 +73,8 @@ namespace Tablefront
         TablefrontMiniatureArt miniatureArt;
         TablefrontLandmarkArt.Kit landmarkArt;
         TablefrontBridgeArt bridgeArt;
+        TablefrontTacticalArt tacticalArt;
+        bool bridgePlanning;
         ReflectionProbe studioProbe;
         VolumeProfile studioProfile;
         Mesh ringMesh, selectionMesh, rockMesh;
@@ -272,7 +277,10 @@ namespace Tablefront
             SetBattlefield(sim);
             if (sim.MissionActive && bridgeArt == null)
                 bridgeArt = new TablefrontBridgeArt(transform, landmarkArt, walnut, steel, ink, ceramic, brass, factionBright);
-            if (bridgeArt != null) bridgeArt.Render(sim.MissionActive ? sim.Bridge : null, ReducedMotion);
+            if (bridgeArt != null) bridgeArt.Render(sim.MissionActive ? sim.Bridge : null, ReducedMotion, bridgePlanning);
+            if (sim.MissionActive && tacticalArt == null)
+                tacticalArt = new TablefrontTacticalArt(transform, landmarkArt, sim.Tactics, walnut, steel, factionBright);
+            if (tacticalArt != null) tacticalArt.Render(sim.MissionActive ? sim : null);
             RenderBridgeAudio(sim.MissionActive ? sim.Bridge : null);
             if (coverSimulation != sim) BuildCover(sim);
             present.Clear();
@@ -304,7 +312,7 @@ namespace Tablefront
                 model.Selection.SetActive(isSelected || isHovered);
                 model.Selection.transform.localScale = Vector3.one * (BaseRadius(u.Kind) + (isSelected ? .25f : .14f));
                 model.Damage.SetActive(model.DamageLife > 0 && !ReducedMotion);
-                model.Cover.SetActive(sim.IsProtected(u));
+                RenderProtection(sim, u, model, isSelected || isHovered);
                 model.Flash.SetActive(u.ShotFlash > .01f);
                 model.HealthRoot.gameObject.SetActive(u.Health < u.MaxHealth - .1f || isSelected || isHovered);
                 model.HealthRoot.rotation = view.transform.rotation;
@@ -335,7 +343,10 @@ namespace Tablefront
                 lm.Root.SetActive(army.Alive);
                 if (lm.Health != null) lm.Health.localScale = new Vector3(Mathf.Clamp(army.BaseHealth / BattleSimulation.BaseMaxHealth, .01f, 1f) * 3.1f, .09f, .08f);
             }
-            RenderOrders(sim, selected);
+            // The controller's route/formation preview is the sole order-line authority.
+            // Retain these historical pooled objects for acceptance cues and resource bounds.
+            foreach (var guide in orderGuides)
+                if (guide != null) { guide.Line.enabled = false; guide.Marker.gameObject.SetActive(false); guide.Count = 0; }
             foreach (var text in worldLabels) if (text != null) text.transform.rotation = view.transform.rotation;
             RenderTutorialTarget();
         }
@@ -344,6 +355,7 @@ namespace Tablefront
         public void SetBattlefield(BattleSimulation sim)
         {
             if (!built || sim == null || sim.Battlefield == null || activeBattlefield == sim.Battlefield.Id) return;
+            bridgePlanning = false;
             foreach (var pair in battlefieldRoots) pair.Value.gameObject.SetActive(false);
             if (!battlefieldRoots.TryGetValue(sim.Battlefield.Id, out var root))
             {
@@ -361,6 +373,34 @@ namespace Tablefront
             activeBattlefield = sim.Battlefield.Id;
             root.gameObject.SetActive(true);
             if (studioProbe != null) studioProbe.RenderProbe();
+        }
+
+        public float SurfaceHeight(Vector2 position)
+            => bridgeArt != null && bridgeArt.Visible ? bridgeArt.FloorAt(position) : .055f;
+
+        public void SetBridgePlanning(bool visible) => bridgePlanning = visible;
+
+        void RenderProtection(BattleSimulation sim, Troop unit, Miniature model, bool inspected)
+        {
+            if (!sim.MissionActive)
+            {
+                model.Cover.SetActive(sim.IsProtected(unit));
+                model.CoverMesh.sharedMesh = ringMesh;
+                model.CoverRenderer.sharedMaterial = brass;
+                model.Cover.transform.localRotation = Quaternion.identity;
+                return;
+            }
+            DirectionalCover location = null;
+            if (unit.Kind == UnitKind.Rifle)
+                foreach (var cover in sim.Tactics.Covers)
+                    if (cover.Contains(unit.Position)) { location = cover; break; }
+            bool feedback = model.CoverHitLife > 0 && !ReducedMotion;
+            model.Cover.SetActive(location != null && (inspected || feedback));
+            if (location == null) return;
+            bool flanked = feedback && model.LastHitFlanked;
+            model.CoverMesh.sharedMesh = flanked ? tacticalArt.UnitFlankArc : tacticalArt.UnitProtectionArc;
+            model.CoverRenderer.sharedMaterial = flanked ? muzzle : brass;
+            model.Cover.transform.rotation = TablefrontTacticalArt.Facing(location.Facing);
         }
 
         /// <summary>One reusable, noninteractive world guide for the current tutorial task.</summary>
@@ -460,6 +500,8 @@ namespace Tablefront
             if (coverRoot != null) Destroy(coverRoot.gameObject);
             coverSimulation = sim;
             coverRoot = Group("Playable rifle cover", landmarks);
+            // The mission has two directional positions authored from shared tactical geometry.
+            if (sim.MissionActive) return;
             for (int i = 0; i < sim.CoverZones.Count; i++)
             {
                 var zone = sim.CoverZones[i];
@@ -531,6 +573,7 @@ namespace Tablefront
             Box("Health backing", health, Vector3.zero, new Vector3(.98f, .13f, .035f), ink);
             var fill = Box("Health", health, new Vector3(0, 0, -.012f), new Vector3(.88f, .075f, .02f), factionBright[u.Team]);
             return new Miniature { Root = root.gameObject, Hull = hull, Selection = selected, Cover = cover, Flash = flash, Damage = damage,
+                CoverMesh = cover.GetComponent<MeshFilter>(), CoverRenderer = cover.GetComponent<Renderer>(),
                 HealthRoot = health, HealthFill = fill, Kind = u.Kind, Barrel = art.Barrel, Art = art, PreviousHealth = u.Health };
         }
 
@@ -644,6 +687,8 @@ namespace Tablefront
             for (var i = 0; i < events.Count; i++)
             {
                 var e = events[i]; var effect = effects[effectCursor++ % effects.Length];
+                if (e.TargetId >= 0 && (e.ProtectedHit || e.FlankedHit) && miniatures.TryGetValue(e.TargetId, out var targetModel))
+                { targetModel.CoverHitLife = .32f; targetModel.LastHitFlanked = e.FlankedHit; }
                 bool artillery = e.WeaponKind == UnitKind.Artillery;
                 bool heavy = e.Heavy || e.WeaponKind == UnitKind.Tank || artillery;
                 effect.MaxLife = heavy ? .48f : .22f; effect.Life = effect.MaxLife; effect.Heavy = heavy || e.Killed;
@@ -718,6 +763,7 @@ namespace Tablefront
             {
                 model.Recoil = Mathf.MoveTowards(model.Recoil, 0, dt * 5.5f);
                 model.DamageLife = Mathf.Max(0, model.DamageLife - dt);
+                model.CoverHitLife = Mathf.Max(0, model.CoverHitLife - dt);
             }
             for (var i = 0; i < effects.Length; i++)
             {
@@ -763,6 +809,8 @@ namespace Tablefront
             HoveredUnitId = -1;
             if (tutorialTargetRoot != null) tutorialTargetRoot.gameObject.SetActive(false);
             if (bridgeArt != null) bridgeArt.Render(null, ReducedMotion);
+            if (tacticalArt != null) tacticalArt.Render(null);
+            bridgePlanning = false;
             audioBridge = null; if (bridgeAudio != null) bridgeAudio.Stop();
         }
 

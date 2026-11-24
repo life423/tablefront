@@ -102,8 +102,8 @@ public static class VerifyBridgeHUD
                 AdvanceUntil(() => game.Sim.Bridge.Phase == BridgePhase.Stable, 7);
                 AdvanceUntil(() => game.Sim.Bridge.CooldownRemaining(0) <= 0, 25);
             }
-            Check(game.Sim.Bridge.CommandsRemaining(0) == 0 && !change.interactable && Field<TextMeshProUGUI>("bridgeButtonText").text.Contains("No bridge commands"),
-                "Exhausted bridge commands have an explicit disabled state");
+            Check(game.Sim.Bridge.CommandsRemaining(0) == 0 && !change.interactable && Field<TextMeshProUGUI>("bridgeButtonText").text.Contains("Hold ROTARY"),
+                "Exhausted bridge commands explicitly explain how to recharge and remain locked");
             Check(game.Sim.TryRequestBridge(1, Opposite()), "The enemy can request the same crossing change under the shared rules");
             game.HUD.Refresh();
             Check(Field<TextMeshProUGUI>("bridgeState").text.Contains("EMBER") && Field<TextMeshProUGUI>("bridgeBudget").text.Contains("Enemy 2"),
@@ -121,6 +121,16 @@ public static class VerifyBridgeHUD
             game.Sim.Points[1].CapturingTeam = 0; game.Sim.Points[1].CaptureProgress = 1;
             var holding = game.Sim.Units.First(u => u.Alive && u.Team == 0 && u.Kind == UnitKind.Scout);
             holding.Position = holding.Destination = game.Sim.Points[1].Position; holding.HasOrder = false;
+            // The tactical opening now deploys a real opposing rifle in forward cover,
+            // inside the Depot ring. This HUD-only hold fixture explicitly clears that
+            // garrison; contested-depot rejection remains covered by simulation tests.
+            foreach (var defender in game.Sim.Units.Where(u => u.Alive && u.Team == 1 && Vector2.Distance(u.Position, game.Sim.Points[1].Position) <= BattleSimulation.CaptureRadius))
+            {
+                defender.Position = defender.Destination = new Vector2(20, -16);
+                game.Sim.OrderStop(new[] { defender.Id }, true);
+            }
+            Check(!game.Sim.Units.Any(u => u.Alive && u.Team == 1 && Vector2.Distance(u.Position, game.Sim.Points[1].Position) <= BattleSimulation.CaptureRadius),
+                "The HUD hold-progress fixture explicitly clears the new forward garrison");
             for (int i = 0; i < 40; i++) game.Sim.Step(.05f);
             game.HUD.Refresh();
             Check(game.Sim.MissionHoldSeconds(0) > 0 && Field<TextMeshProUGUI[]>("scoreText")[0].text.Contains("/45s") && Field<RectTransform[]>("scoreFill")[0].anchorMax.x > 0,
@@ -141,7 +151,7 @@ public static class VerifyBridgeHUD
             Check(!game.Sim.MissionActive && !Field<RectTransform>("bridgePanel").gameObject.activeInHierarchy && classes.All(b => b.gameObject.activeInHierarchy) && cards[2].gameObject.activeInHierarchy,
                 "Returning to skirmish restores its five units and three-army HUD");
             Directory.CreateDirectory("TestResults");
-            File.WriteAllLines("TestResults/bridge-hud-runtime.txt", passed);
+            File.WriteAllLines("TestResults/tactical-bridge-hud-regression.txt", passed);
             return passed.Count + " checks passed\n" + string.Join("\n", passed);
         }
         finally

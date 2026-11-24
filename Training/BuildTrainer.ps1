@@ -12,7 +12,7 @@ $compilerArguments += '/reference:' + $coreModule
 $runtimeSource = Join-Path $trainingRoot '..\Assets\Scripts\BattleSimulation.cs'
 if (!(Test-Path -LiteralPath $runtimeSource)) { $runtimeSource = Join-Path $trainingRoot '..\Runtime\BattleSimulation.cs' }
 $battlefieldSource = Join-Path (Split-Path -Parent $runtimeSource) 'TablefrontBattlefields.cs'
-$compilerArguments += @((Join-Path $trainingRoot 'Program.cs'), (Join-Path $trainingRoot 'ExternalPolicyStub.cs'), $runtimeSource, $battlefieldSource, (Join-Path (Split-Path -Parent $runtimeSource) 'TablefrontBridge.cs'))
+$compilerArguments += @((Join-Path $trainingRoot 'Program.cs'), (Join-Path $trainingRoot 'ExternalPolicyStub.cs'), $runtimeSource, $battlefieldSource, (Join-Path (Split-Path -Parent $runtimeSource) 'TablefrontBridge.cs'), (Join-Path (Split-Path -Parent $runtimeSource) 'TablefrontTactics.cs'))
 & 'C:\Program Files\dotnet\dotnet.exe' (Join-Path $sdkRoot 'Roslyn\bincore\csc.dll') @compilerArguments
 if ($LASTEXITCODE -ne 0) { throw 'Trainer compilation failed.' }
 Copy-Item -LiteralPath $coreModule -Destination (Join-Path $targetDir 'UnityEngine.CoreModule.dll') -Force

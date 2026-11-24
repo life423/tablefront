@@ -1,5 +1,7 @@
 # Bridge Gambit experiment
 
+**Historical 0.6.0 record.** For 0.7.0's queued orders, bank blockers, directional cover, forward deployment and renewable bridge commands, read [current tactical rules](TACTICAL_RULES.md). The hard budget, six cover zones and four-node navigation below describe the original experiment.
+
 This is a separate Windows mission built to test whether changing the physical battlefield creates interesting decisions. It keeps the four ordinary skirmish maps unchanged. Passing tests establishes the rules and routes; human play is still needed to judge the fun, clarity and difficulty.
 
 ## Mission

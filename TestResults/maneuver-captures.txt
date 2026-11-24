@@ -1,0 +1,40 @@
+Final tactical rendered-state matrix
+shot=opening; phase=Stable; blueCommands=3; rechargeSeconds=0; size=1280x720; overflow=
+shot=north; phase=Stable; blueCommands=3; rechargeSeconds=0; size=1280x720; overflow=
+shot=planning; phase=Stable; blueCommands=3; rechargeSeconds=0; size=1280x720; overflow=
+shot=front-cover; phase=Stable; blueCommands=3; rechargeSeconds=0; target=8; protected=True; flanked=False; damage=7.474998; size=1280x720; overflow=
+shot=flank-hit; phase=Stable; blueCommands=2; rechargeSeconds=0; target=8; protected=False; flanked=True; damage=11.5; size=1280x720; overflow=
+shot=recharge; phase=Stable; blueCommands=2; rechargeSeconds=9.500018; rider=False; rotaryOwner=0; size=1280x720; overflow=
+shot=recharged; phase=Stable; blueCommands=3; rechargeSeconds=0; rider=False; rotaryOwner=0; size=1280x720; overflow=
+shot=moving-rider; phase=Moving; blueCommands=2; rechargeSeconds=0; rider=True; rotaryOwner=-1; size=1280x720; overflow=
+shot=formation; size=1280x720; preview=6; valid=True; waiting=False; queued=0; overflow=
+shot=queued; size=1280x720; preview=6; valid=True; waiting=False; queued=1; overflow=
+shot=waiting; size=1280x720; preview=6; valid=True; waiting=True; queued=0; overflow=
+shot=wall; size=1280x720; preview=0; valid=False; waiting=False; queued=0; overflow=
+shot=invalid; size=1280x720; preview=0; valid=False; waiting=False; queued=0; overflow=
+shot=title; size=1280x720; preview=0; valid=False; waiting=False; queued=0; overflow=
+shot=help; size=1280x720; preview=0; valid=False; waiting=False; queued=0; overflow=
+shot=shortcuts; size=1280x720; preview=0; valid=False; waiting=False; queued=0; overflow=
+shot=paused; size=1280x720; preview=0; valid=False; waiting=False; queued=0; overflow=
+shot=planning; phase=Stable; blueCommands=3; rechargeSeconds=0; size=1280x720; overflow=
+shot=front-cover; phase=Stable; blueCommands=3; rechargeSeconds=0; target=8; protected=True; flanked=False; damage=7.474998; size=1280x720; overflow=
+shot=flank-hit; phase=Stable; blueCommands=2; rechargeSeconds=0; target=8; protected=False; flanked=True; damage=11.5; size=1280x720; overflow=
+shot=wall; size=1280x720; preview=0; valid=False; waiting=False; queued=0; overflow=
+Below: output width/height explicitly requested and verified against capture metadata.
+shot=opening; phase=Stable; blueCommands=3; rechargeSeconds=0; size=1024x768; overflow=; output=1024x768
+shot=planning; phase=Stable; blueCommands=3; rechargeSeconds=0; size=1024x768; overflow=; output=1024x768
+shot=formation; size=1024x768; preview=6; valid=True; waiting=False; queued=0; overflow=; output=1024x768
+shot=queued; size=1024x768; preview=6; valid=True; waiting=False; queued=1; overflow=; output=1024x768
+shot=wall; size=1024x768; preview=0; valid=False; waiting=False; queued=0; overflow=; output=1024x768
+shot=waiting; size=1024x768; preview=6; valid=True; waiting=True; queued=0; overflow=; output=1024x768
+shot=help; size=1024x768; preview=0; valid=False; waiting=False; queued=0; overflow=; output=1024x768
+shot=shortcuts; size=1024x768; preview=0; valid=False; waiting=False; queued=0; overflow=; output=1024x768
+shot=opening; phase=Stable; blueCommands=3; rechargeSeconds=0; size=2560x1440; overflow=; output=2560x1440
+shot=front-cover; phase=Stable; blueCommands=3; rechargeSeconds=0; target=8; protected=True; flanked=False; damage=7.474998; size=2560x1440; overflow=; output=2560x1440
+shot=flank-hit; phase=Stable; blueCommands=2; rechargeSeconds=0; target=8; protected=False; flanked=True; damage=11.5; size=2560x1440; overflow=; output=2560x1440
+shot=formation; size=2560x1440; preview=6; valid=True; waiting=False; queued=0; overflow=; output=2560x1440
+shot=queued; size=2560x1440; preview=6; valid=True; waiting=False; queued=1; overflow=; output=2560x1440
+shot=wall; size=2560x1440; preview=0; valid=False; waiting=False; queued=0; overflow=; output=2560x1440
+shot=help; size=2560x1440; preview=0; valid=False; waiting=False; queued=0; overflow=; output=2560x1440
+shot=opening; phase=Stable; blueCommands=3; rechargeSeconds=0; size=3440x1440; overflow=; output=3440x1440
+shot=queued; size=3440x1440; preview=6; valid=True; waiting=False; queued=1; overflow=; output=3440x1440

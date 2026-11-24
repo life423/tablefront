@@ -1,0 +1,23 @@
+{
+  "shortcuts": [
+    {
+      "path": "C:\\Users\\aiand\\Desktop\\Tablefront.lnk",
+      "workingDirectory": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront",
+      "target": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront\\StartTablefront.exe"
+    },
+    {
+      "path": "C:\\Users\\aiand\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Tablefront\\Tablefront.lnk",
+      "workingDirectory": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront",
+      "target": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront\\StartTablefront.exe"
+    }
+  ],
+  "setupExitCode": 0,
+  "upgradedFrom": "0.6.0",
+  "matchingPayloadFiles": 190,
+  "installerSHA256": "92b561c2b82dc80105669f358014e0820e8464062876e9c0702bfb64a0b9d19c",
+  "installLocation": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront",
+  "version": "0.7.0",
+  "policySHA256": "07ee559f4ae04a0023d0d451757a4bb2772e18c7aec1c52ca89eaefee3052181",
+  "trainingPerformed": false,
+  "installerBytes": 29780922
+}

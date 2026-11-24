@@ -1,0 +1,23 @@
+PASS Next battlefield changes the selected rules, preview name and description to Ridgeway
+PASS Next battlefield changes the selected rules, preview name and description to Dust Basin
+PASS Next battlefield changes the selected rules, preview name and description to River Crossing
+PASS Next battlefield changes the selected rules, preview name and description to Greenfield
+PASS Previous battlefield wraps from the first map to the final map
+PASS Play vs AI starts the selected map with the expanded roster
+PASS Normal battle exposes all five labeled recruitment and class-selection actions
+PASS Recruit Gunner button deploys a real paid reinforcement
+PASS Gunner class button selects its own units without recruiting
+PASS Recruit Artillery button deploys a real paid reinforcement
+PASS Artillery class button selects its own units without recruiting
+PASS Selecting artillery explains its firing dead zone before the player gives an order
+PASS A single protected rifle uses grammatical singular feedback
+PASS Select whole army includes the new support units
+PASS Visible Hold action applies the real hold-position order to the entire selection
+PASS Visible Attack-move action arms the order and displays the active state
+PASS Visible Stop cancels the armed order and holds no stale movement order
+PASS Paused battle disables command and recruitment buttons
+PASS Tutorial uses its original teaching map without overwriting the player's battlefield choice
+PASS Tutorial progressively presents its original three unit classes
+PASS Exiting the tutorial restores the selected battlefield preview
+PASS Results Next battlefield starts a fresh battle and wraps through the level roster
+PASS Active expanded battle text fits the current 1280x720 Game view:

@@ -1,0 +1,19 @@
+{
+  "processes": [
+    {
+      "Id": 35312,
+      "Path": "C:\\Users\\aiand\\AppData\\Local\\Programs\\Tablefront\\Tablefront.exe"
+    }
+  ],
+  "version": "0.7.0",
+  "gpu": "NVIDIA GeForce RTX 5070",
+  "missionStartedViaNativeUI": false,
+  "nativeInputsSent": 0,
+  "sceneInitialized": true,
+  "scriptOrShaderErrors": [],
+  "processCountAtCheck": 1,
+  "launchedVia": "Installed desktop shortcut -> StartTablefront.exe",
+  "nativeFrameTimeMeasured": false,
+  "nativeVisualStatus": "Unavailable: both desktop-control runtimes fail startup with invalid original workspace directory (os error 267)",
+  "graphicsAPI": "Direct3D 12"
+}

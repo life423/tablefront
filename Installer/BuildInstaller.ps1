@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory=$true)][string]$BuildDirectory,
     [Parameter(Mandatory=$true)][string]$OutputDirectory,
     [string]$CompilerPath,
-    [ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version='0.6.0'
+    [ValidatePattern('^\d+\.\d+\.\d+$')][string]$Version='0.7.0'
 )
 $ErrorActionPreference='Stop'
 $buildRoot=(Resolve-Path -LiteralPath $BuildDirectory).Path

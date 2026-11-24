@@ -57,11 +57,13 @@ namespace Tablefront
 
         public const float MaximumGroundHeight = .04f;
         readonly int style;
+        readonly TablefrontTactics missionTactics;
 
         TablefrontTerrainArt(BattlefieldDefinition battlefield)
         {
             if (battlefield == null) return;
             style = battlefield.TerrainStyle;
+            if (style == 4) missionTactics = new TablefrontTactics();
             var roads = new List<Road>();
             var clear = new List<Vector2>(battlefield.BasePositions);
             clear.AddRange(battlefield.PointPositions);
@@ -537,6 +539,14 @@ namespace Tablefront
         {
             if (Mathf.Abs(p.x) > 24 || Mathf.Abs(p.y) > 24) return false;
             if (style == 4 && (Mathf.Abs(p.x) < 4.1f || p.sqrMagnitude < 12.2f * 12.2f)) return false;
+            if (missionTactics != null)
+            {
+                // Cosmetic trees/rocks must not disguise the two actual blockers or rifle arcs.
+                foreach (var obstacle in missionTactics.Obstacles)
+                    if (obstacle.Contains(p, roadRadius + 1.1f)) return false;
+                foreach (var cover in missionTactics.Covers)
+                    if (Vector2.Distance(p, cover.Center) < cover.Radius + roadRadius + .5f) return false;
+            }
             for (int i = 0; i < Landmarks.Length; i++) if (Vector2.Distance(p, Landmarks[i]) < landmarkRadius) return false;
             RoadDistance(p, out float lateral, out float width);
             return Mathf.Abs(lateral) > width + roadRadius;

@@ -15,6 +15,8 @@ namespace Tablefront
         readonly Material[] signals;
         TablefrontBridge previousBridge;
         float visualAngle;
+        Vector2 deckAlong;
+        public bool Visible { get; private set; }
         public float VisualAngle => visualAngle;
 
         public TablefrontBridgeArt(Transform parent, TablefrontLandmarkArt.Kit kit, Material wood,
@@ -93,30 +95,32 @@ namespace Tablefront
             Root.gameObject.SetActive(false);
         }
 
-        public void Render(TablefrontBridge bridge, bool reducedMotion)
+        public void Render(TablefrontBridge bridge, bool reducedMotion, bool planning = false)
         {
-            Root.gameObject.SetActive(bridge != null);
+            Visible = bridge != null;
+            Root.gameObject.SetActive(Visible);
             if (bridge == null) { previousBridge = null; return; }
             float blend = !Application.isPlaying || reducedMotion ? 1 : 1 - Mathf.Exp(-22 * Time.unscaledDeltaTime);
             visualAngle = previousBridge != bridge ? bridge.AngleDegrees : Mathf.LerpAngle(visualAngle, bridge.AngleDegrees, blend);
             previousBridge = bridge;
+            float radians = visualAngle * Mathf.Deg2Rad;
+            deckAlong = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
             Deck.localRotation = Quaternion.Euler(0, -visualAngle, 0);
             bool changing = bridge.Phase != BridgePhase.Stable;
-            Preview.gameObject.SetActive(changing);
-            Preview.localRotation = Quaternion.Euler(0, bridge.TargetRoute == BridgeRoute.North ? -53.130102f : 53.130102f, 0);
-            Material signal = bridge.ActorTeam >= 0 && bridge.ActorTeam < 2 ? signals[bridge.ActorTeam] : brass;
+            Preview.gameObject.SetActive(changing || planning);
+            BridgeRoute previewRoute = changing ? bridge.TargetRoute : bridge.CurrentRoute == BridgeRoute.North ? BridgeRoute.South : BridgeRoute.North;
+            Preview.localRotation = Quaternion.Euler(0, previewRoute == BridgeRoute.North ? -53.130102f : 53.130102f, 0);
+            Material signal = !changing ? signals[0] : bridge.ActorTeam >= 0 && bridge.ActorTeam < 2 ? signals[bridge.ActorTeam] : brass;
             RouteOutline.sharedMaterial = RouteArrow.sharedMaterial = signal;
             int activeRoute = bridge.CurrentRoute == BridgeRoute.North ? 1 : -1;
-            int nextRoute = bridge.TargetRoute == BridgeRoute.North ? 1 : -1;
+            int nextRoute = previewRoute == BridgeRoute.North ? 1 : -1;
             for (int i = 0; i < landingSignals.Length; i++)
-                landingSignals[i].sharedMaterial = changing && landingRoutes[i] == nextRoute ? signal : landingRoutes[i] == activeRoute ? brass : inactive;
+                landingSignals[i].sharedMaterial = (changing || planning) && landingRoutes[i] == nextRoute ? signal : landingRoutes[i] == activeRoute ? brass : inactive;
         }
 
         public float FloorAt(Vector2 position)
         {
-            float a = visualAngle * Mathf.Deg2Rad;
-            Vector2 along = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-            float x = Vector2.Dot(position, along), z = Vector2.Dot(position, new Vector2(-along.y, along.x));
+            float x = Vector2.Dot(position, deckAlong), z = Vector2.Dot(position, new Vector2(-deckAlong.y, deckAlong.x));
             return Mathf.Abs(x) <= 10.1f && Mathf.Abs(z) <= 1.87f ? DeckFloor : .055f;
         }
 

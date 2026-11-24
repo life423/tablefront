@@ -48,8 +48,11 @@ Check(start.MissionActive && start.Bridge != null && start.Armies.Count(a => a.A
     "Mission initializes exactly two live armies with no phantom third force");
 Check(start.Units.Count == 12 && start.Units.All(u => u.Kind == UnitKind.Scout || u.Kind == UnitKind.Rifle || u.Kind == UnitKind.Tank) && start.Units.All(u => Legal(start, u)),
     "Both sides start with six legal Scout/Rifle/Tank units");
-Check(start.CoverZones.All(c => MathF.Abs(c.Position.x) - c.Radius >= TablefrontBridge.RiverHalfWidth && c.Position.magnitude - c.Radius >= 12.19f),
-    "All mission cover lies on banks outside the bridge sweep");
+Check(start.CoverZones.Count == 2 && start.CoverZones.All(c => MathF.Abs(c.Position.x) - c.Radius >= TablefrontBridge.RiverHalfWidth &&
+    start.Bridge.IsWalkable(c.Position, BattleSimulation.UnitRadius(UnitKind.Tank))) && start.Tactics.Covers.All(c =>
+    (c.Center + c.Facing * c.Radius).magnitude > MathF.Sqrt(100 + 1.8f * 1.8f) &&
+    Vector2.Distance(c.Center, new Vector2(6 * MathF.Sign(c.Center.x), 8 * MathF.Sign(c.Center.x))) > 3),
+    "Both directional cover centres are legal bank positions and physical front walls clear the swept deck and landings");
 foreach (int team in new[] { 0, 1 })
 {
     start.Armies[team].Credits = 999; start.Armies[team].RecruitCooldown = 0;
@@ -151,7 +154,7 @@ foreach (int direction in new[] { -1, 1 })
     Advance(sim, 20.1f); sim.TryRequestBridge(1, BridgeRoute.North);
     Advance(sim, 20.1f);
     Check(sim.Bridge.CommandsRemaining(0) == 0 && sim.Bridge.CommandsRemaining(1) == 0 && !sim.TryRequestBridge(0, BridgeRoute.South),
-        "Each side has a hard three-command budget; cooldown expiry cannot create extra charges");
+        "Without owning ROTARY each side exhausts its initial three commands; cooldown alone cannot replenish charges");
     var crossing = Unit(sim, 100, 0, UnitKind.Tank, new Vector2(-12, 8));
     sim.OrderMove(new[] { crossing.Id }, new Vector2(12, -8), false); Advance(sim, 40);
     Check(crossing.Position.x > 5 && Legal(sim, crossing),
@@ -253,6 +256,8 @@ for (int seed = 1; seed <= 8; seed++)
     {
         if (!rotated && sim.Elapsed >= 8) rotated = sim.TryRequestBridge(0, BridgeRoute.South);
         sim.Step(.05f);
+        var invalid = sim.Units.FirstOrDefault(u => !Legal(sim, u));
+        if (invalid != null) throw new Exception("Illegal mission unit: seed=" + seed + " time=" + sim.Elapsed + " id=" + invalid.Id + " kind=" + invalid.Kind + " pos=" + invalid.Position + " phase=" + sim.Bridge.Phase + " angle=" + sim.Bridge.AngleDegrees + " riding=" + sim.Bridge.IsRiding(invalid.Id) + " deck=" + sim.Bridge.OnBridge(invalid.Position, BattleSimulation.UnitRadius(invalid.Kind)));
         finite &= sim.Units.All(u => Legal(sim, u) && !float.IsNaN(u.Health));
     }
     if (sim.Finished) normallyFinished++;

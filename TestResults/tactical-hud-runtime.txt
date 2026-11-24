@@ -1,0 +1,27 @@
+PASS Move is a visible labeled action and needs a selection
+PASS Selecting the army enables movement without a keyboard shortcut
+PASS Move button arms a destination and explains the next action
+PASS Armed Move receives the established selected-action treatment
+PASS The pending movement accepts legal ground
+PASS Giving the destination exits Move mode
+PASS An append request queues the next waypoint
+PASS One queued waypoint for six troops is described as one step rather than six clicks
+PASS The visible Stop action clears current and pending movement
+PASS Attack-move and Move are mutually exclusive visible actions
+PASS Move replaces an armed attack-move without issuing an unwanted order
+PASS Bridge control stays independent of troop selection and names the alternative approach
+PASS Unowned ROTARY explains the rechargeable bridge resource
+PASS Focusing the bridge button previews its other landing before committing
+PASS Inspecting the alternate crossing spends no command and does not move the bridge
+PASS The real uncontested ROTARY timer drives the recharge countdown
+PASS Completing the hold restores a real command and presents the cap clearly
+PASS Mouse Help explains queueing and the plan preview
+PASS Mission Help explains physical sight blockers, flanking and the recharge condition
+PASS Help locks movement and bridge commands
+PASS Pause locks both forms of command
+PASS Active tactical HUD text fits the verified Game view
+PASS The five labeled army actions have nonzero, nonoverlapping targets
+PASS An actual protected shot explains its outcome in the existing command area
+PASS An actual rear shot visibly explains that the enemy cover was bypassed
+PASS Combat outcome feedback stays with its selected force
+PASS Ordinary skirmishes retain their original cover rules and gain the same planning controls

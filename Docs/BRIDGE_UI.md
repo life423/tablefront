@@ -1,5 +1,7 @@
 # Bridge Gambit interface
 
+**Historical 0.6.0 interface review.** The [0.7.0 release record](RELEASE_v0.7.0.md) and [current controls](TACTICAL_CONTROLS.md) cover order planning, positional combat feedback and rechargeable bridge commands.
+
 Bridge Gambit has its own **Try mission** action on the title screen. The existing four-map skirmish selector and six-step tutorial remain separate. Entering or retrying the mission preserves the player's chosen skirmish map.
 
 The mission presents two armies and the original three unit classes: Scouts, Rifles and Tanks. Its header shows each army's continuous, uncontested hold time on the opposing Depot, out of 45 seconds, alongside HQ health. The compact goal names uncontested holding; Help explicitly explains that an enemy capture attempt resets the timer. Ordinary score victory is not presented as the mission goal.

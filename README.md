@@ -2,7 +2,7 @@
 
 A Windows tabletop RTS made in Unity. Command a miniature army in three-way skirmishes, or try Bridge Gambit against one opposing commander on a battlefield you can reshape.
 
-The **0.6.0 playtest** introduces **Bridge Gambit**, a separate mission with a movable crossing, blocked water and equal bridge-command budgets. [Download the Windows installer](https://github.com/life423/tablefront/releases/download/v0.6.0-preview.1/Tablefront-Setup-v0.6.0.exe) or read the [mission notes](Docs/RELEASE_v0.6.0.md). The four normal battlefields, five-unit skirmish roster, six-step tutorial, ten control groups and painted miniature-tabletop graphics remain included. The stable release remains 0.2.1 while these experiments receive human playtesting.
+The **0.7.0 playtest** adds **order planning and positional combat** to Bridge Gambit: preview real routes and formations, queue waypoints with Shift, use cover from its protected side, and rotate the crossing to approach a flank. Holding ROTARY restores bridge commands for either army. [Download the Windows installer](https://github.com/life423/tablefront/releases/download/v0.7.0-preview.1/Tablefront-Setup-v0.7.0.exe) or read the [mission notes](Docs/RELEASE_v0.7.0.md). The four normal battlefields, five-unit skirmish roster, six-step tutorial and ten control groups remain included. Stable 0.2.1 remains available while these experiments receive human playtesting.
 
 **Windows PC comes first; tablet comes later.** The product plan is a paid Windows v1 with a free demo; pricing is undecided. The current preview is free to download. A tablet port, storefront and payment flow have not been implemented. See [product direction](Docs/PRODUCT_DIRECTION.md).
 
@@ -10,8 +10,8 @@ The **0.6.0 playtest** introduces **Bridge Gambit**, a separate mission with a m
 
 ## Play
 
-1. [Download the 0.6.0 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.6.0-preview.1/Tablefront-Setup-v0.6.0.exe).
-2. Double-click **Tablefront-Setup-v0.6.0.exe** and choose **Install**.
+1. [Download the 0.7.0 Windows playtest](https://github.com/life423/tablefront/releases/download/v0.7.0-preview.1/Tablefront-Setup-v0.7.0.exe).
+2. Double-click **Tablefront-Setup-v0.7.0.exe** and choose **Install**.
 3. Open **Tablefront** from the desktop icon or Start menu.
 4. Choose the gold **Bridge Gambit · Try mission** action for the movable-bridge experiment. **Tutorial** teaches the basic controls. For a normal match, choose a battlefield using **Previous / Next**, then **Play vs AI**. **Watch AI battle** runs three neural commanders. After a normal match, **Next battlefield** starts a fresh battle on the next map.
 
@@ -21,7 +21,7 @@ Unity, the .NET SDK, an account, and an internet connection are not required to 
 
 **Click a blue unit** to select it, or choose a class or **Select whole army** below the table. Then **click ground to move** or **click an enemy to attack**. A normal move prioritizes travelling to its destination. For fighting along the way, press **A**, then click a destination. Keep troops inside a beacon's ring to capture it. Normal skirmishes end at **350 points** or when both enemy headquarters fall. Bridge Gambit instead requires **45 seconds of continuous control of the enemy depot**, or destroying its single enemy HQ.
 
-Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.6.0.
+Prefer the older stable build? [Download 0.2.1](https://github.com/life423/tablefront/releases/download/v0.2.1/Tablefront-Setup-v0.2.1.exe). Its controls differ: right-click gives orders, 1/2/3 recruit and Tab switches the commander. The controls below describe 0.7.0.
 
 ## Controls
 
@@ -35,6 +35,8 @@ Prefer the older stable build? [Download 0.2.1](https://github.com/life423/table
 | Scouts / Rifles / Tanks / Gunners / Artillery buttons | Select that troop class |
 | Recruit buttons | Buy reinforcements at your HQ |
 | Shift + select | Add or remove units from the selection |
+| Shift + ground / enemy order | Queue the next movement or focus attack; release Shift to replace the plan |
+| Move button | Choose a destination, including ground beneath a friendly unit; Escape cancels |
 | Right-click ground / enemy | Alternative move / attack |
 | Select whole army / Ctrl+A | Select your whole army |
 | Ctrl+0–9 | Save or replace that control group with the selected units |
@@ -84,13 +86,17 @@ All factions start with the same original six-unit army. Gunners and Artillery a
 
 ## Bridge Gambit
 
-![Bridge Gambit opening with two armies and a rotary crossing](Docs/Images/bridge-opening-1024.png)
+![Real route and formation preview in Bridge Gambit](Docs/Images/maneuver-formation-1280.png)
 
 Start this separate experiment from **Bridge Gambit · Try mission** on the title. You command COBALT against EMBER with Scouts, Rifles and Tanks. Capture and continuously control **EMBER DEPOT for 45 seconds**, or destroy the enemy HQ. An enemy recapture attempt resets your hold timer; EMBER follows the same objective against your depot.
 
-The river blocks movement away from the physical bridge. Use the visible **Open North/South crossing · R** button, or press **R**, to request the other route. Each side receives **three commands**, a **20-second personal cooldown**, and the same **eight-second docking grace**. A **three-second warning** precedes a **two-second rotation**. New arrivals wait on their bank while existing riders travel with the bridge. Rotation itself does not damage or drop troops; their orders resume after docking. The warning identifies who requested the change.
+The river blocks movement away from the physical bridge. Stone screens on the banks block movement and shots. Each side starts one of its three Rifles in forward cover; cover protects against attacks from its marked front, and side/rear shots bypass that reduction. The North landing approaches the cover front; the South landing allows a route around the stone screen to the rear. Both armies use the same geometry and damage rules.
 
-Try using the other landing to approach a defended depot from a different angle. **Retry Bridge Gambit** starts a fresh mission with fresh bridge commands. Entering or retrying it preserves your normal skirmish-map choice. The [mission rules](Docs/BRIDGE_RULES.md) explain navigation, timers and AI limitations. This is a playable experiment; its human fun and ideal balance are still to be tested.
+Use **Open North/South crossing · R**, or press **R**, to request the other route. Hover or focus the button to inspect the alternate landing without spending a command. Each side starts with **three commands**, a **20-second personal cooldown**, and the same **eight-second docking grace**. Holding ROTARY uncontested for **20 seconds** restores one command, capped at three; a contest or enemy capture attempt resets recharge progress. A **three-second warning** precedes a **two-second rotation**. New arrivals wait on their bank while riders travel with the bridge and retain their plans. The warning identifies the actor.
+
+Select troops and hover ground to inspect their real routes and formation destinations. Gold shows a proposed order; blue shows selected troops' accepted plans. **Shift-click** adds the next waypoint, while an ordinary click replaces the plan. Each troop can queue 12 pending orders. **Stop** clears them. A closed bridge shows a waiting route ending safely on the bank. These planning controls also work on ordinary maps, which retain their original cover and visibility rules. See [planning controls](Docs/TACTICAL_CONTROLS.md) and [current tactical rules](Docs/TACTICAL_RULES.md).
+
+**Retry Bridge Gambit** resets the mission and preserves the normal map choice. The existing neural commander is still frozen; its separate bridge route-cost controller follows the shared rules. No new training ran. Human comprehension, fun and ideal balance remain to be tested.
 
 ## Tutorial
 
@@ -104,7 +110,7 @@ The opponents use a **40 → 32 tanh → 10 softmax** neural policy trained by *
 
 The network chooses capture, assault, defense, recruitment and whether to keep current orders. Movement, targeting, firing, damage, capture and economy follow the same game rules for players and AI. There is no scripted strategic fallback. The policy is **frozen during gameplay**.
 
-**No new training was run for 0.5.0 or 0.6.0.** In normal skirmishes, an explicit recruitment-role adapter gives the neural commanders access to Gunners and Artillery through their existing infantry/heavy recruitment choices. Gunners aggregate into the existing infantry observation and Artillery into heavy units. In Bridge Gambit, a separate route-cost controller can spend the enemy's bridge commands when a change would shorten its existing cross-bank orders. These adapters are game logic, not newly learned unit selection or bridge tactics. The old weights have not learned the new maps, counters or mission objective. Training and CudaRL integration remain paused.
+**No new training was run for 0.5.0 or 0.7.0.** In normal skirmishes, an explicit recruitment-role adapter gives the neural commanders access to Gunners and Artillery through their existing infantry/heavy recruitment choices. Gunners aggregate into the existing infantry observation and Artillery into heavy units. In Bridge Gambit, a separate route-cost controller can spend the enemy's bridge commands when a change would shorten its existing cross-bank orders. These adapters are game logic, not newly learned unit selection or bridge tactics. The old weights have not learned the new maps, counters or mission objective. Training and CudaRL integration remain paused.
 
 Historical held-out evaluation on the original roster rotated the trained agent through all three starting positions:
 

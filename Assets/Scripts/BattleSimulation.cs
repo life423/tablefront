@@ -35,6 +35,9 @@ namespace Tablefront
         public bool WaitingForBridge;
         public int AttackTargetId = -1;
         public bool Alive => Health > 0f;
+        readonly List<TroopOrder> queuedOrders = new List<TroopOrder>(4);
+        public IReadOnlyList<TroopOrder> QueuedOrders => queuedOrders;
+        internal List<TroopOrder> OrderQueue => queuedOrders;
         internal float WeaponTimer;
         internal bool AttackMove = true;
         internal int BaseTargetTeam = -1;
@@ -61,9 +64,9 @@ namespace Tablefront
     public struct CombatEvent
     {
         public Vector2 From, To;
-        public int Team, ShooterId;
+        public int Team, ShooterId, TargetId;
         public UnitKind WeaponKind;
-        public bool Heavy, Killed;
+        public bool Heavy, Killed, ProtectedHit, FlankedHit;
     }
 
     /// <summary>
@@ -84,11 +87,14 @@ namespace Tablefront
         public const float TankArmorDamageMultiplier = 1.2f;
         public const float ArtilleryMinimumRange = 4.5f;
         public const float MissionHoldRequired = 45f;
+        public const int MaxQueuedOrders = 12;
+        public const float BridgeRechargeRequired = 20f;
         public static readonly UnitKind[] UnitKinds = { UnitKind.Scout, UnitKind.Rifle, UnitKind.Tank, UnitKind.Gunner, UnitKind.Artillery };
 
         public BattlefieldDefinition Battlefield { get; }
         public bool MissionActive => Battlefield.Id == BattlefieldId.BridgeGambit;
         public TablefrontBridge Bridge { get; }
+        public TablefrontTactics Tactics { get; }
         public string MissionWinReason { get; private set; } = "";
         /// <summary>Current skirmishes enable the five-unit role adapter; old trainers/replays default to the original three.</summary>
         public bool ExpandedRoster;
@@ -116,6 +122,8 @@ namespace Tablefront
         readonly float[] captureWeights = new float[3];
         readonly float[] missionHold = new float[2];
         readonly float[] bridgeDecisionTimers = new float[2];
+        readonly float[] bridgeRecharge = new float[2];
+        readonly List<OrderFormationSlot> formationScratch = new List<OrderFormationSlot>(30);
         int nextId = 1, stepNumber;
 
         struct Hit
@@ -205,23 +213,28 @@ namespace Tablefront
             }
             if (MissionActive)
             {
-                Bridge = new TablefrontBridge();
+                Tactics = new TablefrontTactics();
+                Bridge = new TablefrontBridge(Tactics);
                 Armies[2].BaseHealth = 0; Armies[2].IsAI = false; Armies[2].Credits = 0; Armies[2].Intent = "Not deployed";
                 Units.RemoveAll(unit => unit.Team == 2);
                 Points[0].Owner = Points[0].CapturingTeam = 0; Points[0].CaptureProgress = 1;
                 Points[1].Owner = Points[1].CapturingTeam = 1; Points[1].CaptureProgress = 1;
                 CoverZones.Clear();
-                CoverZones.Add(new CoverZone { Name = "Cobalt north cover", Position = new Vector2(-11, 12), Radius = 2.2f });
-                CoverZones.Add(new CoverZone { Name = "Cobalt south cover", Position = new Vector2(-8, -12), Radius = 2.2f });
-                CoverZones.Add(new CoverZone { Name = "Cobalt depot cover", Position = new Vector2(-15, -5), Radius = 2.2f });
-                CoverZones.Add(new CoverZone { Name = "Ember south cover", Position = new Vector2(11, -12), Radius = 2.2f });
-                CoverZones.Add(new CoverZone { Name = "Ember north cover", Position = new Vector2(8, 12), Radius = 2.2f });
-                CoverZones.Add(new CoverZone { Name = "Ember depot cover", Position = new Vector2(15, 5), Radius = 2.2f });
+                foreach (var cover in Tactics.Covers)
+                    CoverZones.Add(new CoverZone { Name = "Directional rifle cover", Position = cover.Center, Radius = cover.Radius });
                 foreach (var unit in Units) unit.Position = unit.Destination = Bridge.ProjectDestination(unit.Position, Specifications(unit.Kind).Radius);
+                // Equal visible opening deployment; these remain ordinary, commandable
+                // Rifles, not scripted defenders or extra units outside the shared budget.
+                for (int team = 0; team < 2; team++)
+                    foreach (var unit in Units)
+                        if (unit.Team == team && unit.Kind == UnitKind.Rifle)
+                        { unit.Position = unit.Destination = Tactics.Covers[team].Center; break; }
             }
         }
 
         public float MissionHoldSeconds(int team) => team >= 0 && team < 2 ? missionHold[team] : 0;
+        public float BridgeRechargeSeconds(int team) => team >= 0 && team < 2 ? bridgeRecharge[team] : 0;
+        public bool HasLineOfSight(Vector2 from, Vector2 to) => !MissionActive || Tactics.HasLineOfSight(from, to);
         public bool DestinationAllowed(Vector2 location, UnitKind kind = UnitKind.Rifle) =>
             !MissionActive || Bridge.IsWalkable(location, UnitRadius(kind));
         public bool TryRequestBridge(int team, BridgeRoute target)
@@ -271,6 +284,16 @@ namespace Tablefront
         {
             return troop != null && troop.Alive && troop.Kind == UnitKind.Rifle && IsInCover(troop.Position);
         }
+
+        public bool IsProtected(Troop troop, Vector2 attacker)
+        {
+            if (!IsProtected(troop)) return false;
+            if (!MissionActive) return true;
+            foreach (var cover in Tactics.Covers) if (cover.Protects(troop.Position, attacker)) return true;
+            return false;
+        }
+
+        public bool IsFlanked(Troop troop, Vector2 attacker) => MissionActive && IsProtected(troop) && !IsProtected(troop, attacker);
 
         public static string RoleDescription(UnitKind kind)
         {
@@ -457,49 +480,130 @@ namespace Tablefront
             Units.Add(unit);
         }
 
-        public void OrderMove(IEnumerable<int> ids, Vector2 target, bool attackMove = true)
+        /// <summary>Pure formation plan shared by accepted commands and cursor previews.</summary>
+        public void GetFormation(IEnumerable<int> ids, Vector2 target, List<OrderFormationSlot> output)
         {
-            if (Finished || ids == null || !Finite(target)) return;
-            orderScratch.Clear();
-            foreach (int id in ids) if (!orderScratch.Contains(id)) orderScratch.Add(id);
-            int count = orderScratch.Count;
+            output.Clear();
+            if (ids == null || !Finite(target)) return;
+            // Local query data: previewing must not alter orders, bridge or simulation scratch.
+            var selected = new List<Troop>(30);
+            foreach (int id in ids)
+            {
+                Troop unit = FindUnit(id);
+                if (unit != null && unit.Alive && !selected.Contains(unit)) selected.Add(unit);
+            }
+            int count = selected.Count;
             if (count == 0) return;
             target = Bound(target);
             int width = Mathf.CeilToInt(Mathf.Sqrt(count));
             int rows = Mathf.CeilToInt(count / (float)width);
+            float spacing = 1.45f;
+            if (MissionActive) foreach (var unit in selected) spacing = Mathf.Max(spacing, UnitRadius(unit.Kind) * 2 + .16f);
             for (int slot = 0; slot < count; slot++)
             {
-                Troop unit = FindUnit(orderScratch[slot]);
-                if (unit == null || !unit.Alive) continue;
-                Vector2 offset = new Vector2((slot % width - (width - 1) * .5f) * 1.45f,
-                    (slot / width - (rows - 1) * .5f) * 1.45f);
-                unit.Destination = Bound(target + offset);
-                if (MissionActive) unit.Destination = Bridge.ProjectDestination(unit.Destination, Specifications(unit.Kind).Radius);
-                unit.HasOrder = true;
-                unit.WaitingForBridge = false;
-                unit.AttackMove = attackMove;
-                unit.HoldPosition = false;
-                unit.AttackTargetId = -1;
-                unit.BaseTargetTeam = -1;
+                Troop unit = selected[slot];
+                Vector2 offset = new Vector2((slot % width - (width - 1) * .5f) * spacing,
+                    (slot / width - (rows - 1) * .5f) * spacing);
+                Vector2 destination = Bound(target + offset);
+                if (MissionActive)
+                {
+                    destination = Bridge.ProjectDestination(destination, UnitRadius(unit.Kind));
+                    // Projection at a wall/water edge can collapse grid slots. Search nearby
+                    // legal alternatives while keeping every displayed base footprint distinct.
+                    if (!FormationSlotClear(unit, destination, output))
+                    {
+                        Vector2 preferred = destination;
+                        bool found = false;
+                        for (int ring = 1; ring <= 12 && !found; ring++)
+                            for (int sample = 0; sample < ring * 8 && !found; sample++)
+                            {
+                                float angle = sample * Mathf.PI * 2 / (ring * 8);
+                                Vector2 candidate = Bound(preferred + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * ring * spacing * .55f);
+                                if (!Bridge.IsWalkable(candidate, UnitRadius(unit.Kind)) || !FormationSlotClear(unit, candidate, output)) continue;
+                                destination = candidate; found = true;
+                            }
+                    }
+                }
+                output.Add(new OrderFormationSlot { UnitId = unit.Id, Destination = destination });
             }
         }
 
-        public void OrderAttack(IEnumerable<int> ids, int targetId)
+        bool FormationSlotClear(Troop unit, Vector2 destination, List<OrderFormationSlot> slots)
         {
-            if (Finished || ids == null) return;
+            foreach (var slot in slots)
+            {
+                Troop other = FindUnit(slot.UnitId);
+                float separation = UnitRadius(unit.Kind) + UnitRadius(other.Kind) + .08f;
+                if ((destination - slot.Destination).sqrMagnitude < separation * separation) return false;
+            }
+            return true;
+        }
+
+        public void BuildOrderRoute(Troop unit, Vector2 origin, Vector2 destination, List<Vector2> points, out bool waiting)
+        {
+            waiting = false; points.Clear();
+            if (unit == null || !Finite(origin) || !Finite(destination)) return;
+            if (MissionActive) Bridge.BuildRoute(unit, origin, destination, UnitRadius(unit.Kind), points, out waiting);
+            else { points.Add(origin); points.Add(Bound(destination)); }
+        }
+
+        public int OrderMove(IEnumerable<int> ids, Vector2 target, bool attackMove = true, bool append = false)
+        {
+            if (Finished || ids == null || !Finite(target)) return 0;
+            GetFormation(ids, target, formationScratch);
+            int accepted = 0;
+            foreach (var slot in formationScratch)
+                if (IssueOrder(FindUnit(slot.UnitId), new TroopOrder { Destination = slot.Destination, AttackTargetId = -1, AttackMove = attackMove }, append)) accepted++;
+            return accepted;
+        }
+
+        public int OrderAttack(IEnumerable<int> ids, int targetId, bool append = false)
+        {
+            if (Finished || ids == null) return 0;
             Troop target = FindUnit(targetId);
-            if (target == null || !target.Alive) return;
+            if (target == null || !target.Alive) return 0;
+            int accepted = 0;
+            orderScratch.Clear();
             foreach (int id in ids)
             {
                 Troop unit = FindUnit(id);
-                if (unit == null || !unit.Alive || unit.Team == target.Team) continue;
-                unit.AttackTargetId = targetId;
-                unit.HasOrder = true;
-                unit.AttackMove = true;
-                unit.HoldPosition = false;
-                unit.WaitingForBridge = false;
-                unit.BaseTargetTeam = -1;
-                unit.Destination = target.Position;
+                if (unit == null || !unit.Alive || unit.Team == target.Team || orderScratch.Contains(id)) continue;
+                orderScratch.Add(id);
+                if (IssueOrder(unit, new TroopOrder { Destination = target.Position, AttackTargetId = targetId, AttackMove = true }, append)) accepted++;
+            }
+            return accepted;
+        }
+
+        bool IssueOrder(Troop unit, TroopOrder order, bool append)
+        {
+            if (append && unit.HasOrder)
+            {
+                if (unit.OrderQueue.Count >= MaxQueuedOrders) return false;
+                unit.OrderQueue.Add(order); return true;
+            }
+            unit.OrderQueue.Clear(); ActivateOrder(unit, order); return true;
+        }
+
+        void ActivateOrder(Troop unit, TroopOrder order)
+        {
+            unit.Destination = order.Destination; unit.AttackTargetId = order.AttackTargetId;
+            unit.AttackMove = order.AttackMove; unit.HasOrder = true;
+            unit.HoldPosition = false; unit.WaitingForBridge = false; unit.BaseTargetTeam = -1;
+        }
+
+        void CompleteOrder(Troop unit)
+        {
+            unit.HasOrder = false; unit.AttackTargetId = unit.BaseTargetTeam = -1;
+            while (unit.OrderQueue.Count > 0)
+            {
+                TroopOrder next = unit.OrderQueue[0]; unit.OrderQueue.RemoveAt(0);
+                if (next.AttackTargetId >= 0)
+                {
+                    Troop target = FindUnit(next.AttackTargetId);
+                    if (target == null || !target.Alive || target.Team == unit.Team) continue;
+                    next.Destination = target.Position;
+                }
+                ActivateOrder(unit, next); break;
             }
         }
 
@@ -515,6 +619,7 @@ namespace Tablefront
                 unit.WaitingForBridge = false;
                 unit.AttackTargetId = unit.BaseTargetTeam = -1;
                 unit.AttackMove = true;
+                unit.OrderQueue.Clear();
             }
         }
 
@@ -576,6 +681,12 @@ namespace Tablefront
                     ControlPoint depot = Points[1 - team];
                     missionHold[team] = Armies[team].Alive && depot.Owner == team && !depot.Contested &&
                         (depot.CapturingTeam < 0 || depot.CapturingTeam == team) ? missionHold[team] + dt : 0;
+                    ControlPoint rotary = Points[2];
+                    bool recharge = Armies[team].Alive && Bridge.CommandsRemaining(team) < TablefrontBridge.CommandsPerTeam &&
+                        rotary.Owner == team && !rotary.Contested && (rotary.CapturingTeam < 0 || rotary.CapturingTeam == team);
+                    bridgeRecharge[team] = recharge ? bridgeRecharge[team] + dt : 0;
+                    if (bridgeRecharge[team] + .0001f >= BridgeRechargeRequired)
+                    { Bridge.RestoreCommand(team); bridgeRecharge[team] = 0; }
                 }
             for (int i = Units.Count - 1; i >= 0; i--) if (!Units[i].Alive) Units.RemoveAt(i);
             CheckVictory();
@@ -625,7 +736,14 @@ namespace Tablefront
             {
                 target = FindUnit(unit.AttackTargetId);
                 if (target == null || !target.Alive || target.Team == unit.Team)
-                { unit.AttackTargetId = -1; target = null; }
+                {
+                    unit.AttackTargetId = -1; target = null;
+                    if (unit.OrderQueue.Count > 0)
+                    {
+                        CompleteOrder(unit);
+                        if (unit.AttackTargetId >= 0) target = FindUnit(unit.AttackTargetId);
+                    }
+                }
                 else unit.Destination = target.Position;
             }
             if (target == null && (unit.AttackMove || !unit.HasOrder))
@@ -648,7 +766,7 @@ namespace Tablefront
                     if (away.sqrMagnitude < .001f) away = Vector2.up;
                     movementTarget = unit.Position + away.normalized * (minimumRange + .75f - distance);
                 }
-                else if (distance <= stats.Range)
+                else if (distance <= stats.Range && HasLineOfSight(unit.Position, target.Position))
                 {
                     move = false;
                     firedOrAiming = true;
@@ -672,7 +790,8 @@ namespace Tablefront
                     for (int i = 0; i < Armies.Count; i++)
                     {
                         Army candidate = Armies[i];
-                        if (i != unit.Team && candidate.Alive && (candidate.BasePosition - unit.Position).sqrMagnitude < stats.Range * stats.Range)
+                        if (i != unit.Team && candidate.Alive && (candidate.BasePosition - unit.Position).sqrMagnitude < stats.Range * stats.Range &&
+                            HasLineOfSight(unit.Position, candidate.BasePosition))
                         { targetBase = candidate; break; }
                     }
                 }
@@ -686,7 +805,7 @@ namespace Tablefront
                         if (away.sqrMagnitude < .001f) away = Vector2.up;
                         movementTarget = unit.Position + away.normalized * (minimumRange + .75f - distance);
                     }
-                    else if (distance <= stats.Range + 1.25f)
+                    else if (distance <= stats.Range + 1.25f && HasLineOfSight(unit.Position, targetBase.BasePosition))
                     {
                         move = false;
                         firedOrAiming = true;
@@ -708,12 +827,12 @@ namespace Tablefront
                 if (MissionActive) movementTarget = Bridge.NextWaypoint(unit, movementTarget, stats.Radius, out finalDestination);
                 Vector2 delta = movementTarget - unit.Position;
                 float distance = delta.magnitude;
-                if (distance > .22f)
+                if (distance > (finalDestination ? .22f : .01f))
                 {
                     steering = delta / distance * Mathf.Min(stats.Speed, distance / Mathf.Max(dt, .001f));
                     if (!firedOrAiming) Face(unit, delta, dt);
                 }
-                else if (finalDestination && target == null && unit.BaseTargetTeam < 0) unit.HasOrder = false;
+                else if (finalDestination && target == null && unit.BaseTargetTeam < 0) CompleteOrder(unit);
             }
 
             // Soft separation keeps miniature bases readable while permitting movement through a crowd.
@@ -780,7 +899,9 @@ namespace Tablefront
             for (int i = 0; i < pendingHits.Count; i++)
             {
                 Hit hit = pendingHits[i];
+                if (!HasLineOfSight(hit.From, hit.To)) continue;
                 bool killed = false;
+                bool protectedHit = false, flankedHit = false;
                 if (hit.BaseTeam >= 0)
                 {
                     if (PracticeMode) continue;
@@ -800,6 +921,8 @@ namespace Tablefront
                 {
                     Troop target = FindUnit(hit.TargetId);
                     if (target == null || !target.Alive) continue;
+                    if (!HasLineOfSight(hit.From, target.Position)) continue;
+                    protectedHit = IsProtected(target, hit.From); flankedHit = IsFlanked(target, hit.From);
                     killed = DamageTroop(target, hit.Damage, hit);
                     if (killed) Armies[hit.AttackerTeam].Credits = Mathf.Min(999f, Armies[hit.AttackerTeam].Credits + 9f);
                     // Heavy shells damage nearby opponents only; all controllers share this rule.
@@ -812,19 +935,21 @@ namespace Tablefront
                             Troop splash = Units[u];
                             if (!splash.Alive || splash.Id == hit.TargetId || splash.Team == hit.AttackerTeam) continue;
                             float distance = Vector2.Distance(splash.Position, hit.To);
-                            if (distance < splashRadius)
+                            if (distance < splashRadius && HasLineOfSight(hit.To, splash.Position))
                                 killed |= DamageTroop(splash, hit.Damage * splashStrength * (1f - distance / splashRadius), hit);
                         }
                     }
                 }
-                Events.Add(new CombatEvent { From = hit.From, To = hit.To, Team = hit.AttackerTeam, ShooterId = hit.ShooterId, WeaponKind = hit.WeaponKind, Heavy = hit.Heavy, Killed = killed });
+                Events.Add(new CombatEvent { From = hit.From, To = hit.To, Team = hit.AttackerTeam, ShooterId = hit.ShooterId,
+                    TargetId = hit.TargetId, ProtectedHit = protectedHit, FlankedHit = flankedHit,
+                    WeaponKind = hit.WeaponKind, Heavy = hit.Heavy, Killed = killed });
             }
         }
 
         bool DamageTroop(Troop target, float damage, Hit hit)
         {
             if (!target.Alive) return false;
-            if (IsProtected(target)) damage *= RifleCoverDamageMultiplier;
+            if (IsProtected(target, hit.From)) damage *= RifleCoverDamageMultiplier;
             // Only actual tank units receive the anti-armour bonus; the HQ gun does not.
             if (hit.ShooterId > 0 && hit.WeaponKind == UnitKind.Tank && target.Kind == UnitKind.Tank)
                 damage *= TankArmorDamageMultiplier;
@@ -960,7 +1085,7 @@ namespace Tablefront
             for (int i = 0; i < Units.Count; i++)
             {
                 Troop unit = Units[i];
-                if (!unit.Alive || unit.Team == team) continue;
+                if (!unit.Alive || unit.Team == team || !HasLineOfSight(position, unit.Position)) continue;
                 float candidate = (unit.Position - position).sqrMagnitude;
                 if (candidate >= minimumRadius * minimumRadius && candidate < distance) { best = unit; distance = candidate; }
             }

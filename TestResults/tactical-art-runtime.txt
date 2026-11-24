@@ -1,0 +1,33 @@
+PASS Mission displays its cached tactical scenery
+PASS Tactical art adds no hidden physics or pick colliders
+PASS Both banks have one equal solid obstacle and one directional cover area
+PASS Blocker 0 uses the exact shared center and angle
+PASS Blocker 0 visible bounds match its collision and sight silhouette
+PASS Cover 0 front arc and sandbags face the actual protected direction
+PASS Blocker 1 uses the exact shared center and angle
+PASS Blocker 1 visible bounds match its collision and sight silhouette
+PASS Cover 1 front arc and sandbags face the actual protected direction
+PASS Physical tactical cues use supported shared palette materials
+PASS Tactical scenery is bounded to fewer than 36 material batches and indicators
+PASS Protection uses a forward partial arc; exposed hit feedback uses an unmistakably different rear arc
+PASS Full command capacitors show no misleading recharge progress
+PASS Stable bridge planning previews the alternative landing without spending a command
+PASS Leaving the contextual bridge action removes the planning ghost
+PASS Frontal fixture exposes the enemy cover direction only while inspected
+PASS Actual frontal shot supplies exact target and cover classification
+PASS Actual protected hit displays its corresponding directional feedback
+PASS Reduced motion suppresses the unselected transient cover-hit cue 0
+PASS Reduced motion retains the selected unit's meaningful protection direction 0
+PASS Rear fixture exposes the enemy cover direction only while inspected
+PASS Actual rear shot supplies exact target and cover classification
+PASS Actual flanked hit displays its corresponding directional feedback
+PASS Reduced motion suppresses the unselected transient cover-hit cue 1
+PASS Reduced motion retains the selected unit's meaningful protection direction 1
+PASS Normal mission navigation reaches ROTARY for physical recharge proof
+PASS Actual bridge request spends a real command for indicator verification
+PASS The physical capacitor shows two blue commands while all three orange commands remain
+PASS Actual uncontested capture displays only the owning army's exact partial recharge
+PASS A genuine completed recharge restores the third cap and removes its progress bar
+PASS Ordinary skirmishes hide all mission-only tactical art
+PASS Mission and skirmish rematches reuse all tactical meshes, shared materials and textures
+PASS Rematches keep one tactical-art instance
